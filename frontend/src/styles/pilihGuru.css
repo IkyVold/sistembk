@@ -1,0 +1,194 @@
+.pilih-page {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #f5f4f0;
+  min-height: 100vh;
+  color: #2c2c2a;
+}
+
+.pilih-page * {
+  box-sizing: border-box;
+}
+
+.pilih-page .page-header {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 56px 48px 32px;
+}
+
+.pilih-page .breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #888780;
+  margin-bottom: 20px;
+}
+.pilih-page .breadcrumb a {
+  color: #888780;
+  text-decoration: none;
+}
+.pilih-page .breadcrumb a:hover {
+  color: #534ab7;
+}
+.pilih-page .breadcrumb svg {
+  width: 12px;
+  height: 12px;
+}
+
+.pilih-page .page-header h1 {
+  font-size: 28px;
+  font-weight: 500;
+  color: #444441;
+  margin-bottom: 10px;
+}
+
+.pilih-page .page-header p {
+  font-size: 15px;
+  color: #888780;
+  line-height: 1.6;
+}
+
+.pilih-page .info-banner {
+  max-width: 860px;
+  margin: 0 auto 36px;
+  padding: 0 48px;
+}
+
+.pilih-page .info-inner {
+  background: #eeedfe;
+  border: 0.5px solid #cecbf6;
+  border-radius: 10px;
+  padding: 13px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #3c3489;
+}
+
+.pilih-page .info-inner svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: #534ab7;
+}
+
+.pilih-page .cards-wrapper {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 48px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pilih-page .counselor-card {
+  background: #fff;
+  border: 0.5px solid #d3d1c7;
+  border-radius: 14px;
+  padding: 22px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.pilih-page .counselor-card:hover {
+  border-color: #afa9ec;
+  box-shadow: 0 0 0 3px #eeedfe;
+}
+
+.pilih-page .counselor-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 0.5px solid #d3d1c7;
+  flex-shrink: 0;
+}
+
+.pilih-page .counselor-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pilih-page .counselor-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: #444441;
+  margin-bottom: 6px;
+}
+
+.pilih-page .counselor-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pilih-page .meta-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #5f5e5a;
+  background: #f1efe8;
+  border-radius: 20px;
+  padding: 3px 10px;
+}
+.pilih-page .meta-pill svg {
+  width: 11px;
+  height: 11px;
+  color: #888780;
+}
+
+.pilih-page .role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #534ab7;
+  background: #eeedfe;
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-weight: 500;
+}
+.pilih-page .role-badge svg {
+  width: 11px;
+  height: 11px;
+}
+
+.pilih-page .pilih-button {
+  flex-shrink: 0;
+  background: #534ab7;
+  color: #fff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+.pilih-page .pilih-button:hover {
+  background: #3c3489;
+}
+.pilih-page .pilih-button:active {
+  transform: scale(0.97);
+}
+
+@media (max-width: 640px) {
+  .pilih-page .page-header, .pilih-page .info-banner, .pilih-page .cards-wrapper {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .pilih-page .page-header {
+    padding-top: 36px;
+  }
+  .pilih-page .counselor-card {
+    flex-wrap: wrap;
+  }
+  .pilih-page .pilih-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
