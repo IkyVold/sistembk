@@ -1,18 +1,18 @@
         .history-page {
-            --bg: #0d0f14;
-            --surface: #14171f;
-            --surface-2: #1c2030;
-            --border: rgba(255,255,255,0.07);
-            --accent: #5b8dee;
-            --accent-2: #a78bfa;
-            --accent-glow: rgba(91,141,238,0.25);
-            --text-primary: #f0f2f8;
-            --text-secondary: #8891aa;
-            --text-muted: #4e5570;
-            --danger: #f87171;
-            --success: #34d399;
-            --warning: #fbbf24;
-            --info: #60a5fa;
+            --bg: var(--bg-page);
+            --surface: #ffffff;
+            --surface-2: var(--gray-50);
+            --border: var(--gray-100);
+            --accent: var(--purple-600);
+            --accent-2: var(--purple-400);
+            --accent-glow: rgba(83,74,183,0.22);
+            --text-primary: var(--gray-800);
+            --text-secondary: var(--gray-600);
+            --text-muted: var(--gray-400);
+            --danger: var(--red-600);
+            --success: var(--teal-600);
+            --warning: var(--coral-800);
+            --info: var(--purple-600);
             --sidebar-w: 260px;
         }
 
@@ -31,8 +31,8 @@
             position: fixed;
             inset: 0;
             background:
-                radial-gradient(ellipse 60% 40% at 20% 10%, rgba(91,141,238,0.12) 0%, transparent 60%),
-                radial-gradient(ellipse 50% 50% at 80% 80%, rgba(167,139,250,0.08) 0%, transparent 60%);
+                radial-gradient(ellipse 60% 40% at 20% 10%, rgba(83,74,183,0.12) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 50% at 80% 80%, rgba(127,119,221,0.08) 0%, transparent 60%);
             pointer-events: none;
             z-index: 0;
         }
@@ -55,7 +55,7 @@
             position: absolute;
             top: 0; left: 0; right: 0;
             height: 180px;
-            background: linear-gradient(180deg, rgba(91,141,238,0.12) 0%, transparent 100%);
+            background: linear-gradient(180deg, rgba(83,74,183,0.12) 0%, transparent 100%);
             pointer-events: none;
         }
 
@@ -137,14 +137,14 @@
         }
 
         .history-page .sidebar-menu a:hover {
-            background: rgba(255,255,255,0.05);
+            background: rgba(68,68,65,0.05);
             color: var(--text-primary);
         }
 
         .history-page .sidebar-menu a.active {
-            background: linear-gradient(135deg, rgba(91,141,238,0.2), rgba(167,139,250,0.12));
+            background: linear-gradient(135deg, rgba(83,74,183,0.2), rgba(127,119,221,0.12));
             color: var(--text-primary);
-            border: 1px solid rgba(91,141,238,0.25);
+            border: 1px solid rgba(83,74,183,0.25);
         }
 
         .history-page .menu-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
@@ -252,9 +252,9 @@
         }
 
         .history-page .history-card:hover {
-            border-color: rgba(91,141,238,0.4);
+            border-color: rgba(83,74,183,0.4);
             transform: translateY(-4px);
-            box-shadow: 0 16px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(91,141,238,0.2);
+            box-shadow: 0 16px 40px rgba(38,33,92,0.35), 0 0 0 1px rgba(83,74,183,0.2);
         }
 
         .history-page .history-card::before {
@@ -291,8 +291,8 @@
         .history-page .category-icon {
             width: 32px;
             height: 32px;
-            background: linear-gradient(135deg, rgba(91,141,238,0.2), rgba(167,139,250,0.15));
-            border: 1px solid rgba(91,141,238,0.2);
+            background: linear-gradient(135deg, rgba(83,74,183,0.2), rgba(127,119,221,0.15));
+            border: 1px solid rgba(83,74,183,0.2);
             border-radius: 8px;
             display: flex;
             align-items: center;
@@ -358,7 +358,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: rgba(0,0,0,0.1);
+            background: rgba(68,68,65,0.08);
         }
 
         /* ── Status badges ── */
@@ -379,9 +379,9 @@
         }
 
         .history-page .badge-selesai {
-            background: rgba(52,211,153,0.12);
+            background: rgba(29,158,117,0.12);
             color: var(--success);
-            border: 1px solid rgba(52,211,153,0.25);
+            border: 1px solid rgba(29,158,117,0.25);
         }
 
         .history-page .badge-selesai .badge-dot {
@@ -390,9 +390,9 @@
         }
 
         .history-page .badge-proses {
-            background: rgba(251,191,36,0.12);
+            background: rgba(216,90,48,0.12);
             color: var(--warning);
-            border: 1px solid rgba(251,191,36,0.25);
+            border: 1px solid rgba(216,90,48,0.25);
         }
 
         .history-page .badge-proses .badge-dot {
@@ -401,33 +401,33 @@
         }
 
         .history-page .badge-dibatalkan {
-            background: rgba(248,113,113,0.12);
+            background: rgba(163,45,45,0.12);
             color: var(--danger);
-            border: 1px solid rgba(248,113,113,0.25);
+            border: 1px solid rgba(163,45,45,0.25);
         }
 
         .history-page .badge-dibatalkan .badge-dot { background: var(--danger); }
 
         .history-page .badge-laporan {
-            background: rgba(91,141,238,0.12);
+            background: rgba(83,74,183,0.12);
             color: var(--accent);
-            border: 1px solid rgba(91,141,238,0.25);
+            border: 1px solid rgba(83,74,183,0.25);
         }
 
         .history-page .badge-laporan .badge-dot { background: var(--accent); }
 
         .history-page .badge-nolap {
-            background: rgba(251,191,36,0.1);
+            background: rgba(216,90,48,0.1);
             color: var(--warning);
-            border: 1px solid rgba(251,191,36,0.2);
+            border: 1px solid rgba(216,90,48,0.2);
         }
 
         .history-page .badge-nolap .badge-dot { background: var(--warning); }
 
         .history-page .badge-tervalidasi {
-            background: rgba(91,141,238,0.12);
+            background: rgba(83,74,183,0.12);
             color: var(--accent);
-            border: 1px solid rgba(91,141,238,0.25);
+            border: 1px solid rgba(83,74,183,0.25);
         }
 
         .history-page .badge-tervalidasi .badge-dot { background: var(--accent); }
@@ -448,8 +448,8 @@
         .history-page .warning-note {
             font-size: 11px;
             color: var(--warning);
-            background: rgba(251,191,36,0.08);
-            border: 1px solid rgba(251,191,36,0.15);
+            background: rgba(216,90,48,0.08);
+            border: 1px solid rgba(216,90,48,0.15);
             border-radius: 6px;
             padding: 6px 10px;
             margin: 8px 22px;

@@ -1,0 +1,18 @@
+.avatar-photo {
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  display: block;
+  background: var(--gray-50);
+}
+
+.avatar-initial {
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--purple-800);
+  background: var(--purple-50);
+}

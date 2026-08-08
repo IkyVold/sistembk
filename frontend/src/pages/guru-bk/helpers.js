@@ -60,6 +60,7 @@ export function mapKonselingRow(row, currentGuru) {
     guru: row.guru,
     npsn: currentGuru?.npsn,
     namaSiswa: row.nama_siswa || row.nis,
+    fotoSiswa: row.foto_siswa || null,
     nisnSiswa: row.nis,
     kelasSiswa: row.kelas_siswa || '-',
     tahunAjaran,

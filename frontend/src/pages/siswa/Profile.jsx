@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import axiosClient, { extractErrorMessage } from '../../api/axiosClient';
+import Avatar from '../../components/Avatar';
 import './profile.css';
 
 const KELAS_OPTIONS = ['X', 'XI', 'XII'].flatMap((tingkat) =>
@@ -26,13 +27,15 @@ const FIELD_LABELS = {
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { siswa, logout } = useAuth();
+  const { siswa, logout, updateSiswaFoto } = useAuth();
 
   const [profile, setProfile] = useState(null);
   const [loadError, setLoadError] = useState(false);
   const [editField, setEditField] = useState(null); // 'jenis_kelamin' | 'tanggal_lahir' | 'alamat' | 'no_telepon' | null
   const [editValue, setEditValue] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingFoto, setIsUploadingFoto] = useState(false);
+  const fileInputRef = useRef(null);
 
   const loadProfile = () => {
     const nis = siswa?.nis;
@@ -87,10 +90,66 @@ export default function Profile() {
   }
 
   function editFoto() {
-    alert('📸 Fitur upload foto akan segera hadir!');
+    fileInputRef.current?.click();
   }
 
-  const avatarInitial = profile?.nama ? profile.nama.charAt(0).toUpperCase() : 'S';
+  async function handleFotoChange(e) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // biar bisa pilih file yang sama lagi kalau mau
+    if (!file) return;
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      alert('❌ Format foto harus JPG, PNG, atau WEBP.');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      alert('❌ Ukuran foto maksimal 2MB.');
+      return;
+    }
+
+    setIsUploadingFoto(true);
+    try {
+      const formData = new FormData();
+      formData.append('foto', file);
+
+      // Content-Type sengaja di-set undefined: axios instance ini punya default
+      // 'application/json', tapi untuk FormData kita perlu boundary otomatis dari
+      // browser. Set eksplisit ke undefined memaksa axios membiarkan browser yang
+      // menentukan Content-Type + boundary yang benar untuk multipart/form-data.
+      const { data } = await axiosClient.put(`/api/profile/${profile.nis}/foto`, formData, {
+        headers: { 'Content-Type': undefined },
+      });
+      if (!data.success) throw new Error(data.error || 'Gagal mengunggah foto');
+
+      setProfile((prev) => ({ ...prev, foto_profile: data.foto_profile }));
+      updateSiswaFoto(data.foto_profile);
+    } catch (err) {
+      alert(`❌ Gagal mengunggah foto: ${extractErrorMessage(err, 'Unknown error')}`);
+    } finally {
+      setIsUploadingFoto(false);
+    }
+  }
+
+  async function handleHapusFoto() {
+    if (!profile?.foto_profile) return;
+    if (!confirm('Hapus foto profil? Avatar akan kembali ke inisial nama.')) return;
+
+    setIsUploadingFoto(true);
+    try {
+      const { data } = await axiosClient.delete(`/api/profile/${profile.nis}/foto`);
+      if (!data.success) throw new Error(data.error || 'Unknown error');
+
+      setProfile((prev) => ({ ...prev, foto_profile: null }));
+      updateSiswaFoto(null);
+    } catch (err) {
+      alert(`❌ Gagal menghapus foto: ${extractErrorMessage(err, 'Unknown error')}`);
+    } finally {
+      setIsUploadingFoto(false);
+    }
+  }
+
+
 
   return (
     <div className="profile-page">
@@ -146,8 +205,32 @@ export default function Profile() {
               <div className="card identity-card">
                 <div className="identity-card-banner" />
                 <div className="identity-card-body">
-                  <div className="profile-avatar" onClick={editFoto}>
-                    {avatarInitial}
+                  <div className="profile-avatar-wrap">
+                    <Avatar src={profile.foto_profile} name={profile.nama} size={80} />
+                    <div className="avatar-edit-overlay" onClick={editFoto}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                        <circle cx="12" cy="13" r="4" />
+                      </svg>
+                      <span>{isUploadingFoto ? 'Mengunggah...' : 'Ganti Foto'}</span>
+                    </div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      style={{ display: 'none' }}
+                      onChange={handleFotoChange}
+                    />
+                  </div>
+                  <div className="avatar-actions">
+                    <button className="avatar-action-btn" onClick={editFoto} disabled={isUploadingFoto}>
+                      📷 {profile.foto_profile ? 'Ganti Foto' : 'Upload Foto'}
+                    </button>
+                    {profile.foto_profile && (
+                      <button className="avatar-action-btn danger" onClick={handleHapusFoto} disabled={isUploadingFoto}>
+                        🗑️ Hapus
+                      </button>
+                    )}
                   </div>
                   <div className="profile-name">{profile.nama || '-'}</div>
                   <div className="profile-role">

@@ -20,6 +20,27 @@ require('dotenv').config();
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
+// Upload khusus foto profil siswa: disimpan ke disk (bukan memory) karena
+// filenya perlu tetap ada & bisa diakses lewat URL statis setelahnya.
+const FOTO_ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
+const uploadFoto = multer({
+    storage: multer.diskStorage({
+        destination: (req, file, cb) => cb(null, FOTO_SISWA_DIR),
+        filename: (req, file, cb) => {
+            const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+            const nis = req.params.nis.replace(/[^a-zA-Z0-9_-]/g, '');
+            cb(null, `${nis}-${Date.now()}${ext}`);
+        },
+    }),
+    limits: { fileSize: 2 * 1024 * 1024 }, // 2MB, cukup untuk foto profil
+    fileFilter: (req, file, cb) => {
+        if (!FOTO_ALLOWED_MIME.includes(file.mimetype)) {
+            return cb(new Error('Format file harus JPG, PNG, atau WEBP'));
+        }
+        cb(null, true);
+    },
+});
+
 // Modul auth yang sudah direfactor ke pola services/controllers/routes.
 // Route lain di file ini masih dalam proses migrasi bertahap ke pola yang sama.
 const authRoutes = require('./routes/authRoutes');
@@ -85,6 +106,15 @@ app.use(cors({
     credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
+
+// Folder penyimpanan file upload (foto profil siswa) — disajikan statis
+// supaya bisa diakses langsung lewat URL, mis. /uploads/siswa/xxxx.jpg
+const UPLOADS_DIR = path.join(__dirname, 'uploads');
+const FOTO_SISWA_DIR = path.join(UPLOADS_DIR, 'siswa');
+if (!fs.existsSync(FOTO_SISWA_DIR)) {
+    fs.mkdirSync(FOTO_SISWA_DIR, { recursive: true });
+}
+app.use('/uploads', express.static(UPLOADS_DIR));
 
 // Endpoint /api/register dan /api/login ditangani modul auth yang sudah direfactor.
 app.use('/api', authRoutes);
@@ -182,7 +212,12 @@ initChatStorage();
 
 async function getChatHistoryFromDb(sessionId) {
     const [rows] = await pool.query(
-        'SELECT id, sender_id, sender_name, sender_type, message, created_at FROM chat_messages WHERE session_id = ? ORDER BY id ASC',
+        `SELECT cm.id, cm.sender_id, cm.sender_name, cm.sender_type, cm.message, cm.created_at,
+                s.foto_profile
+         FROM chat_messages cm
+         LEFT JOIN siswa s ON cm.sender_type = 'siswa' AND s.nis = cm.sender_id
+         WHERE cm.session_id = ?
+         ORDER BY cm.id ASC`,
         [sessionId]
     );
     return rows.map(r => ({
@@ -190,6 +225,7 @@ async function getChatHistoryFromDb(sessionId) {
         senderId: r.sender_id,
         senderName: r.sender_name,
         senderType: r.sender_type,
+        senderFoto: r.foto_profile || null,
         message: r.message,
         timestamp: r.created_at
     }));
@@ -303,11 +339,19 @@ io.on('connection', (socket) => {
                 [sessionId, String(senderId), senderName || null, dbSenderType, sanitizedMessage]
             );
 
+            // Ambil foto profil pengirim (kalau siswa) supaya bisa ditampilkan di bubble chat
+            let senderFoto = null;
+            if (dbSenderType === 'siswa') {
+                const [siswaRows] = await pool.query('SELECT foto_profile FROM siswa WHERE nis = ?', [String(senderId)]);
+                if (siswaRows.length > 0) senderFoto = siswaRows[0].foto_profile;
+            }
+
             const messageData = {
                 id: result.insertId,
                 senderId,
                 senderName,
                 senderType: dbSenderType,
+                senderFoto,
                 message: sanitizedMessage,
                 timestamp: new Date().toISOString()
             };
@@ -735,28 +779,73 @@ app.put('/api/profile/:nis', async (req, res) => {
     }
 });
 
-// Update foto profile
-app.put('/api/profile/:nis/foto', async (req, res) => {
+// Update foto profile (upload file asli, bukan cuma path)
+app.put('/api/profile/:nis/foto', (req, res) => {
+    // Dipanggil manual (bukan didaftarkan sebagai middleware route) supaya error
+    // dari multer (tipe file salah, ukuran kelebihan, boundary rusak, dll) bisa
+    // ditangani langsung di sini dengan pasti — tidak bergantung pada urutan
+    // error-middleware Express yang gampang salah pasang.
+    uploadFoto.single('foto')(req, res, async (uploadErr) => {
+        if (uploadErr) {
+            console.error('Error upload foto:', uploadErr.message);
+            return res.status(400).json({ error: uploadErr.message || 'Gagal mengunggah foto' });
+        }
+
+        try {
+            const { nis } = req.params;
+            if (!req.file) {
+                return res.status(400).json({ error: 'File foto wajib diunggah' });
+            }
+
+            const [existingRows] = await pool.query('SELECT foto_profile FROM siswa WHERE nis = ?', [nis]);
+            if (existingRows.length === 0) {
+                // Siswa tidak ditemukan — hapus file yang terlanjur ke-upload supaya tidak jadi sampah
+                fs.unlink(req.file.path, () => {});
+                return res.status(404).json({ error: 'Siswa tidak ditemukan' });
+            }
+
+            const fotoPath = `/uploads/siswa/${req.file.filename}`;
+            await pool.query('UPDATE siswa SET foto_profile = ? WHERE nis = ?', [fotoPath, nis]);
+
+            // Hapus file foto lama (kalau ada) supaya folder uploads tidak menumpuk sampah
+            const oldFoto = existingRows[0].foto_profile;
+            if (oldFoto && oldFoto.startsWith('/uploads/siswa/')) {
+                const oldFilePath = path.join(UPLOADS_DIR, oldFoto.replace('/uploads/', ''));
+                fs.unlink(oldFilePath, () => {}); // abaikan error kalau file lama sudah tidak ada
+            }
+
+            res.json({
+                success: true,
+                message: 'Foto profile berhasil diupdate',
+                foto_profile: fotoPath,
+            });
+        } catch (error) {
+            console.error('Error PUT /api/profile/:nis/foto:', error);
+            res.status(500).json({ error: 'Terjadi kesalahan server' });
+        }
+    });
+});
+
+// Hapus foto profile (kembali ke avatar inisial default)
+app.delete('/api/profile/:nis/foto', async (req, res) => {
     try {
         const { nis } = req.params;
-        const { foto_profile } = req.body;
-        
-        const [result] = await pool.query(
-            'UPDATE siswa SET foto_profile = ? WHERE nis = ?',
-            [foto_profile, nis]
-        );
-        
-        if (result.affectedRows === 0) {
+        const [existingRows] = await pool.query('SELECT foto_profile FROM siswa WHERE nis = ?', [nis]);
+        if (existingRows.length === 0) {
             return res.status(404).json({ error: 'Siswa tidak ditemukan' });
         }
-        
-        res.json({ 
-            success: true, 
-            message: 'Foto profile berhasil diupdate' 
-        });
-        
+
+        await pool.query('UPDATE siswa SET foto_profile = NULL WHERE nis = ?', [nis]);
+
+        const oldFoto = existingRows[0].foto_profile;
+        if (oldFoto && oldFoto.startsWith('/uploads/siswa/')) {
+            const oldFilePath = path.join(UPLOADS_DIR, oldFoto.replace('/uploads/', ''));
+            fs.unlink(oldFilePath, () => {});
+        }
+
+        res.json({ success: true, message: 'Foto profile berhasil dihapus' });
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error DELETE /api/profile/:nis/foto:', error);
         res.status(500).json({ error: 'Terjadi kesalahan server' });
     }
 });
@@ -1363,7 +1452,8 @@ app.get('/api/konseling-bk', async (req, res) => {
                 k.laporan_created_at,
                 k.created_at,
                 s.nis,
-                s.nama AS nama_siswa
+                s.nama AS nama_siswa,
+                s.foto_profile AS foto_siswa
              FROM konseling k
              JOIN siswa s ON s.id = k.siswa_id
              WHERE k.guru_bk = ?
@@ -1962,6 +2052,7 @@ app.get('/api/siswa', async (req, res) => {
                 s.nama,
                 s.kelas,
                 s.jenis_kelamin,
+                s.foto_profile,
                 rk.tahun_ajaran,
                 rk.status AS status_kelas
             FROM siswa s

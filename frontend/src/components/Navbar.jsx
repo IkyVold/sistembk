@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import NotificationBell from './NotificationBell';
+import Avatar from './Avatar';
 import '../styles/siswaNav.css';
 
 export default function Navbar() {
@@ -12,7 +13,6 @@ export default function Navbar() {
 
   const nama = siswa?.nama || 'Siswa';
   const firstName = nama.split(' ')[0];
-  const initial = firstName.charAt(0).toUpperCase();
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -53,7 +53,7 @@ export default function Navbar() {
         <div className="nav-divider" />
         <div className="profile-dropdown" ref={dropdownRef}>
           <button className="profile-btn" onClick={() => setDropdownOpen((v) => !v)}>
-            <div className="avatar-circle">{initial}</div>
+            <Avatar src={siswa?.foto_profile} name={nama} size={30} className="avatar-circle" />
             <span>{firstName}</span>
             <svg className="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M4 6l4 4 4-4" />

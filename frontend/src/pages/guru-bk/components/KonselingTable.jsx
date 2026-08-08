@@ -1,5 +1,6 @@
 import { LAPORAN_EDIT_WINDOW_HOURS } from '../constants';
 import { sisaWaktuEditText } from '../helpers';
+import Avatar from '../../../components/Avatar';
 
 function truncate(text, max = 100) {
   const value = text || 'Tidak ada deskripsi';
@@ -78,26 +79,31 @@ export default function KonselingTable({
             <tr key={item.id}>
               <td style={{ fontWeight: 600 }}>{index + 1}</td>
               <td>
-                <strong>{item.namaSiswa}</strong>
-                {item.inputManual && (
-                  <>
-                    <br />
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        marginTop: '3px',
-                        padding: '2px 8px',
-                        background: 'var(--green-100)',
-                        color: 'var(--green-700)',
-                        borderRadius: '20px',
-                        fontSize: '10px',
-                        fontWeight: 700,
-                      }}
-                    >
-                      ✍️ Walk-in
-                    </span>
-                  </>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Avatar src={item.fotoSiswa} name={item.namaSiswa} size={32} />
+                  <div>
+                    <strong>{item.namaSiswa}</strong>
+                    {item.inputManual && (
+                      <>
+                        <br />
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            marginTop: '3px',
+                            padding: '2px 8px',
+                            background: 'var(--green-100)',
+                            color: 'var(--green-700)',
+                            borderRadius: '20px',
+                            fontSize: '10px',
+                            fontWeight: 700,
+                          }}
+                        >
+                          ✍️ Walk-in
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
               </td>
               <td>{item.nisnSiswa || '-'}</td>
               <td>

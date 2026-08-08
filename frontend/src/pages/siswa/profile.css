@@ -1,18 +1,18 @@
         .profile-page {
-            --bg: #0d0f14;
-            --surface: #14171f;
-            --surface-2: #1c2030;
-            --border: rgba(255,255,255,0.07);
-            --accent: #5b8dee;
-            --accent-2: #a78bfa;
-            --accent-glow: rgba(91,141,238,0.25);
-            --text-primary: #f0f2f8;
-            --text-secondary: #8891aa;
-            --text-muted: #4e5570;
-            --danger: #f87171;
-            --success: #34d399;
-            --warning: #fbbf24;
-            --info: #60a5fa;
+            --bg: var(--bg-page);
+            --surface: #ffffff;
+            --surface-2: var(--gray-50);
+            --border: var(--gray-100);
+            --accent: var(--purple-600);
+            --accent-2: var(--purple-400);
+            --accent-glow: rgba(83,74,183,0.22);
+            --text-primary: var(--gray-800);
+            --text-secondary: var(--gray-600);
+            --text-muted: var(--gray-400);
+            --danger: var(--red-600);
+            --success: var(--teal-600);
+            --warning: var(--coral-800);
+            --info: var(--purple-600);
             --sidebar-w: 260px;
         }
 
@@ -31,8 +31,8 @@
             position: fixed;
             inset: 0;
             background:
-                radial-gradient(ellipse 60% 40% at 20% 10%, rgba(91,141,238,0.12) 0%, transparent 60%),
-                radial-gradient(ellipse 50% 50% at 80% 80%, rgba(167,139,250,0.08) 0%, transparent 60%);
+                radial-gradient(ellipse 60% 40% at 20% 10%, rgba(83,74,183,0.06) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 50% at 80% 80%, rgba(127,119,221,0.05) 0%, transparent 60%);
             pointer-events: none;
             z-index: 0;
         }
@@ -56,7 +56,7 @@
             position: absolute;
             top: 0; left: 0; right: 0;
             height: 180px;
-            background: linear-gradient(180deg, rgba(91,141,238,0.12) 0%, transparent 100%);
+            background: linear-gradient(180deg, rgba(83,74,183,0.06) 0%, transparent 100%);
             pointer-events: none;
         }
 
@@ -138,14 +138,14 @@
         }
 
         .profile-page .sidebar-menu a:hover {
-            background: rgba(255,255,255,0.05);
+            background: var(--surface-2);
             color: var(--text-primary);
         }
 
         .profile-page .sidebar-menu a.active {
-            background: linear-gradient(135deg, rgba(91,141,238,0.2), rgba(167,139,250,0.12));
-            color: var(--text-primary);
-            border: 1px solid rgba(91,141,238,0.25);
+            background: linear-gradient(135deg, var(--purple-50), rgba(127,119,221,0.12));
+            color: var(--accent);
+            border: 1px solid var(--purple-100);
         }
 
         .profile-page .menu-icon {
@@ -210,6 +210,7 @@
             border: 1px solid var(--border);
             border-radius: 16px;
             overflow: hidden;
+            box-shadow: 0 1px 3px rgba(68,68,65,0.06);
         }
 
         /* Identity card */
@@ -228,29 +229,86 @@
             padding: 0 28px 28px;
         }
 
-        .profile-page .profile-avatar {
+        /* Avatar: bungkus foto/inisial (komponen Avatar) + tombol edit foto */
+        .profile-page .profile-avatar-wrap {
+            position: relative;
             width: 80px;
-            height: 80px;
-            border-radius: 20px;
-            background: linear-gradient(135deg, var(--accent), var(--accent-2));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Syne', sans-serif;
-            font-size: 32px;
-            font-weight: 800;
-            color: white;
             margin-top: -40px;
             margin-bottom: 16px;
-            border: 4px solid var(--surface);
-            box-shadow: 0 8px 24px var(--accent-glow);
-            position: relative;
-            cursor: pointer;
-            transition: opacity 0.3s;
         }
 
-        .profile-page .profile-avatar:hover {
-            opacity: 0.8;
+        .profile-page .profile-avatar-wrap .avatar-photo,
+        .profile-page .profile-avatar-wrap .avatar-initial {
+            border-radius: 20px;
+            border: 4px solid var(--surface);
+            box-shadow: 0 8px 24px var(--accent-glow);
+        }
+
+        .profile-page .profile-avatar-wrap .avatar-initial {
+            font-family: 'Syne', sans-serif;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            color: white;
+        }
+
+        .profile-page .avatar-edit-overlay {
+            position: absolute;
+            inset: 0;
+            border-radius: 20px;
+            background: rgba(38,33,92,0.55);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            font-size: 10px;
+            font-weight: 600;
+            text-align: center;
+            opacity: 0;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .profile-page .profile-avatar-wrap:hover .avatar-edit-overlay {
+            opacity: 1;
+        }
+
+        .profile-page .avatar-edit-overlay svg { width: 18px; height: 18px; }
+
+        .profile-page .avatar-actions {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .profile-page .avatar-action-btn {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--surface-2);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .profile-page .avatar-action-btn:hover {
+            background: var(--purple-50);
+            color: var(--accent);
+            border-color: var(--purple-100);
+        }
+
+        .profile-page .avatar-action-btn.danger:hover {
+            background: var(--red-50);
+            color: var(--danger);
+            border-color: var(--red-50);
+        }
+
+        .profile-page .avatar-action-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
         .profile-page .profile-name {
@@ -324,8 +382,8 @@
         .profile-page .card-title-icon {
             width: 32px;
             height: 32px;
-            background: linear-gradient(135deg, rgba(91,141,238,0.2), rgba(167,139,250,0.15));
-            border: 1px solid rgba(91,141,238,0.3);
+            background: linear-gradient(135deg, var(--purple-50), rgba(127,119,221,0.15));
+            border: 1px solid var(--purple-100);
             border-radius: 8px;
             display: flex;
             align-items: center;
@@ -352,7 +410,7 @@
         .profile-page .info-row:last-child { border-bottom: none; }
 
         .profile-page .info-row:hover {
-            background: rgba(255,255,255,0.02);
+            background: var(--surface-2);
             border-radius: 8px;
             margin: 0 -12px;
             padding: 16px 12px;
@@ -384,8 +442,8 @@
         }
 
         .profile-page .edit-btn {
-            background: rgba(91,141,238,0.2);
-            border: 1px solid rgba(91,141,238,0.3);
+            background: var(--purple-50);
+            border: 1px solid var(--purple-100);
             padding: 6px 12px;
             border-radius: 8px;
             color: var(--accent);
@@ -395,7 +453,7 @@
         }
 
         .profile-page .edit-btn:hover {
-            background: rgba(91,141,238,0.4);
+            background: var(--purple-100);
             transform: translateY(-2px);
         }
 
@@ -407,11 +465,11 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(38, 33, 92, 0.45);
             z-index: 1000;
             align-items: center;
             justify-content: center;
-            backdrop-filter: blur(8px);
+            backdrop-filter: blur(4px);
         }
 
         .profile-page .modal.show {
@@ -424,7 +482,7 @@
             border-radius: 20px;
             width: 90%;
             max-width: 500px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 20px 60px rgba(38, 33, 92, 0.25);
         }
 
         .profile-page .modal-header {
@@ -433,7 +491,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: linear-gradient(135deg, rgba(91,141,238,0.15), rgba(167,139,250,0.1));
+            background: linear-gradient(135deg, var(--purple-50), rgba(127,119,221,0.08));
             border-radius: 20px 20px 0 0;
         }
 
@@ -444,7 +502,7 @@
         }
 
         .profile-page .close-modal {
-            background: rgba(255,255,255,0.1);
+            background: var(--surface-2);
             border: none;
             font-size: 24px;
             cursor: pointer;
@@ -459,7 +517,7 @@
         }
 
         .profile-page .close-modal:hover {
-            background: rgba(255,255,255,0.2);
+            background: var(--gray-100);
             color: var(--text-primary);
         }
 
@@ -525,7 +583,7 @@
         }
 
         .profile-page .btn-cancel {
-            background: rgba(255,255,255,0.1);
+            background: var(--surface-2);
             color: var(--text-secondary);
             border: 1px solid var(--border);
             padding: 10px 24px;
@@ -536,7 +594,7 @@
         }
 
         .profile-page .btn-cancel:hover {
-            background: rgba(255,255,255,0.15);
+            background: var(--gray-100);
             color: var(--text-primary);
         }
 
@@ -584,11 +642,11 @@
         .profile-page .btn-ghost {
             background: transparent;
             color: var(--danger);
-            border: 1px solid rgba(248,113,113,0.3);
+            border: 1px solid var(--red-50);
         }
 
         .profile-page .btn-ghost:hover {
-            background: rgba(248,113,113,0.1);
+            background: var(--red-50);
             border-color: var(--danger);
             transform: translateY(-2px);
         }

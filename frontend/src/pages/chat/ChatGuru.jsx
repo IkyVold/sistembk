@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import axiosClient from '../../api/axiosClient';
 import ChatRoom from './ChatRoom';
 
 export default function ChatGuru() {
@@ -8,6 +9,7 @@ export default function ChatGuru() {
   const [searchParams] = useSearchParams();
   const { guru } = useAuth();
   const [setup, setSetup] = useState(null);
+  const [siswaFoto, setSiswaFoto] = useState(null);
 
   useEffect(() => {
     const sessionFromUrl = searchParams.get('session');
@@ -21,6 +23,7 @@ export default function ChatGuru() {
     };
 
     const siswaName = siswaFromUrl || localStorage.getItem('chatSiswaName') || 'Siswa';
+    const siswaNis = localStorage.getItem('chatSiswaNISN');
     const sessionId = sessionFromUrl || localStorage.getItem('currentChatSession');
 
     if (!sessionId) {
@@ -35,6 +38,14 @@ export default function ChatGuru() {
       siswaName,
       kategori: kategoriFromUrl,
     });
+
+    // Ambil foto profil siswa (kalau ada) untuk ditampilkan di header chat
+    if (siswaNis && siswaNis !== '-') {
+      axiosClient
+        .get(`/api/profile/${siswaNis}`)
+        .then(({ data }) => setSiswaFoto(data?.foto_profile || null))
+        .catch(() => setSiswaFoto(null));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -50,7 +61,8 @@ export default function ChatGuru() {
       currentUser={setup.currentUser}
       headerTitle={`Konseling dengan ${setup.siswaName}`}
       headerSubtitleHtml={`<strong>${setup.siswaName}</strong>`}
-      avatarEmoji="🧑‍🏫"
+      avatarUrl={siswaFoto}
+      avatarName={setup.siswaName}
       backHref="/guru-bk"
       backLabel="Dashboard"
       infoBannerDefaultHtml={infoBannerDefaultHtml}

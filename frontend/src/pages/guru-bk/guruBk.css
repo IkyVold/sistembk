@@ -1023,3 +1023,14 @@
         .guru-bk-page .siswa-empty { text-align:center; padding:60px 20px; color:var(--ink-500); }
         .guru-bk-page .siswa-empty .empty-icon { font-size:52px; margin-bottom:14px; opacity:.4; }
 
+        /* Avatar foto siswa di modal detail konseling & tabel konseling */
+        .guru-bk-page .detail-modal-avatar.avatar-photo,
+        .guru-bk-page .detail-modal-avatar.avatar-initial {
+            border-radius: 12px;
+        }
+        .guru-bk-page .detail-modal-avatar.avatar-initial {
+            background: linear-gradient(135deg, var(--purple-600) 0%, var(--purple-800) 100%);
+            color: white;
+            font-size: 22px;
+        }
+

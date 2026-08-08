@@ -44,7 +44,7 @@ export default function ChatSiswa() {
       currentUser={setup.currentUser}
       headerTitle={`Konseling dengan ${setup.guruName}`}
       headerSubtitleHtml={`<strong>${setup.guruName}</strong>`}
-      avatarEmoji="👤"
+      avatarName={setup.guruName}
       backHref="/"
       backLabel="Kembali"
       infoBannerDefaultHtml="🔒 Percakapan bersifat rahasia — hanya kamu dan Guru BK yang bisa melihatnya"

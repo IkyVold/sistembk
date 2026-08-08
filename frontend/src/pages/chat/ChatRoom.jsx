@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import useChatSocket from './useChatSocket';
+import Avatar from '../../components/Avatar';
 import './chatRoom.css';
 
 function formatMessageTime(timestamp) {
@@ -15,7 +16,8 @@ export default function ChatRoom({
   currentUser, // { id, name, type }
   headerTitle,
   headerSubtitleHtml,
-  avatarEmoji,
+  avatarUrl, // path foto (siswa) dari backend, opsional
+  avatarName, // nama untuk fallback inisial avatar (bukan headerTitle, supaya inisialnya benar)
   backHref,
   backLabel,
   infoBannerDefaultHtml,
@@ -69,7 +71,9 @@ export default function ChatRoom({
     <div className="chat-shell">
       <div className="chat-header">
         <div className="chat-header-info">
-          <div className="chat-header-avatar">{avatarEmoji}</div>
+          <div className="chat-header-avatar">
+            <Avatar src={avatarUrl} name={avatarName || headerTitle} size={40} className="chat-avatar-square" />
+          </div>
           <div className="chat-header-text">
             <h2>{headerTitle}</h2>
             <p dangerouslySetInnerHTML={{ __html: headerSubtitleHtml }} />
@@ -112,12 +116,16 @@ export default function ChatRoom({
 
           const message = event.data;
           const isSent = message.senderId === currentUser.id;
-          const avatarChar = message.senderName ? message.senderName.charAt(0).toUpperCase() : isSent ? 'S' : 'G';
           const displayName = isSent ? 'Saya' : message.senderName || (message.senderType === 'guru' ? 'Guru BK' : 'Siswa');
 
           return (
             <div className={`message ${isSent ? 'sent' : 'received'}`} key={event.key}>
-              <div className="message-avatar">{avatarChar}</div>
+              <Avatar
+                src={message.senderType === 'siswa' ? message.senderFoto : null}
+                name={message.senderName || displayName}
+                size={28}
+                className="message-avatar"
+              />
               <div className="message-bubble">
                 <div className="message-name">{displayName}</div>
                 <div className="message-text">{message.message}</div>

@@ -28,7 +28,7 @@ async function loginSiswa({ nis, password }) {
   }
 
   const [rows] = await pool.query(
-    'SELECT id, nis, nama, kelas FROM siswa WHERE nis = ? AND password = MD5(?)',
+    'SELECT id, nis, nama, kelas, foto_profile FROM siswa WHERE nis = ? AND password = MD5(?)',
     [nis, password]
   );
 

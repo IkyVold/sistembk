@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Modal from './Modal';
+import Avatar from '../../../components/Avatar';
 import { JAM_LIST, LAPORAN_EDIT_WINDOW_HOURS } from '../constants';
 
 export default function DetailModal({ item, onClose, onValidasi, onBatal, onLaporan, onEditLaporan }) {
@@ -97,21 +98,12 @@ export default function DetailModal({ item, onClose, onValidasi, onBatal, onLapo
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <div
-            style={{
-              width: '50px',
-              height: '50px',
-              background: 'linear-gradient(135deg, var(--purple-600) 0%, var(--purple-800) 100%)',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontSize: '24px',
-            }}
-          >
-            👤
-          </div>
+          <Avatar
+            src={item.fotoSiswa}
+            name={userNama}
+            size={50}
+            className="detail-modal-avatar"
+          />
           <div>
             <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--gray-800)' }}>
               {userNama}{' '}

@@ -21,6 +21,7 @@ function readInitialState() {
           nis: localStorage.getItem('currentUser'),
           nama: localStorage.getItem('currentUserNama'),
           kelas: localStorage.getItem('currentUserKelas'),
+          foto_profile: localStorage.getItem('currentUserFoto') || null,
         }
       : null,
     guru: isGuruLoggedIn
@@ -45,12 +46,31 @@ export function AuthProvider({ children }) {
     localStorage.setItem('currentUser', siswa.nis);
     localStorage.setItem('currentUserNama', siswa.nama);
     localStorage.setItem('currentUserKelas', siswa.kelas);
+    if (siswa.foto_profile) {
+      localStorage.setItem('currentUserFoto', siswa.foto_profile);
+    } else {
+      localStorage.removeItem('currentUserFoto');
+    }
     // Data per-user disimpan juga agar bisa diakses halaman guru-bk, sesuai perilaku lama.
     localStorage.setItem(
       `userData_${siswa.nis}`,
       JSON.stringify({ nis: siswa.nis, nama: siswa.nama, kelas: siswa.kelas })
     );
     setSession((prev) => ({ ...prev, siswa }));
+  }, []);
+
+  // Dipanggil setelah upload/hapus foto profil, supaya Navbar & halaman lain
+  // langsung ikut update tanpa perlu logout-login ulang.
+  const updateSiswaFoto = useCallback((fotoPath) => {
+    if (fotoPath) {
+      localStorage.setItem('currentUserFoto', fotoPath);
+    } else {
+      localStorage.removeItem('currentUserFoto');
+    }
+    setSession((prev) => ({
+      ...prev,
+      siswa: prev.siswa ? { ...prev.siswa, foto_profile: fotoPath || null } : prev.siswa,
+    }));
   }, []);
 
   const loginAsGuru = useCallback((guru) => {
@@ -74,6 +94,7 @@ export function AuthProvider({ children }) {
       localStorage.removeItem('currentUser');
       localStorage.removeItem('currentUserNama');
       localStorage.removeItem('currentUserKelas');
+      localStorage.removeItem('currentUserFoto');
     } else if (role === 'guru') {
       localStorage.removeItem(STORAGE_KEYS.guru);
       localStorage.removeItem('guruBKUsername');
@@ -96,6 +117,7 @@ export function AuthProvider({ children }) {
     loginAsSiswa,
     loginAsGuru,
     loginAsKepsek,
+    updateSiswaFoto,
     logout,
   };
 
