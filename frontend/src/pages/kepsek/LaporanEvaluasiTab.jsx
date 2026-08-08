@@ -46,7 +46,7 @@ export default function LaporanEvaluasiTab({ semuaKonseling, onExportPDF }) {
           </p>
 
           {tanpaLaporan > 0 && (
-            <p style={{ marginTop: '15px', color: '#ffc107' }}>
+            <p style={{ marginTop: '15px', color: 'var(--coral-400)' }}>
               ⚠️ <strong>Perhatian:</strong> Terdapat {tanpaLaporan} konseling yang sudah selesai tetapi belum
               memiliki laporan hasil konseling.
             </p>
@@ -63,7 +63,7 @@ export default function LaporanEvaluasiTab({ semuaKonseling, onExportPDF }) {
             </button>
           </div>
         </div>
-        <div style={{ padding: '20px', background: '#f8f9ff', borderRadius: '12px' }}>
+        <div style={{ padding: '20px', background: 'var(--purple-50)', borderRadius: '12px' }}>
           <h4 style={{ marginBottom: '15px' }}>Kesimpulan:</h4>
           <ul style={{ marginLeft: '20px', lineHeight: 1.8 }}>
             <li>Layanan konseling berjalan dengan baik, dengan tingkat penyelesaian {pct(stats.selesai, stats.total)}%</li>

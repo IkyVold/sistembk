@@ -54,7 +54,7 @@ export default function KonselingTab({
               style={{
                 padding: '10px 14px',
                 borderRadius: '8px',
-                border: '1px solid #e4e7ec',
+                border: '1px solid var(--gray-100)',
                 fontSize: '13.5px',
                 background: '#fff',
                 cursor: 'pointer',

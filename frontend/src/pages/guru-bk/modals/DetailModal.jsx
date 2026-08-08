@@ -92,7 +92,7 @@ export default function DetailModal({ item, onClose, onValidasi, onBatal, onLapo
         style={{
           marginBottom: '25px',
           padding: '15px',
-          background: 'linear-gradient(135deg, #667eea15 0%, #764ba215 100%)',
+          background: 'linear-gradient(135deg, var(--purple-600)15 0%, var(--purple-800)15 100%)',
           borderRadius: '12px',
         }}
       >
@@ -101,7 +101,7 @@ export default function DetailModal({ item, onClose, onValidasi, onBatal, onLapo
             style={{
               width: '50px',
               height: '50px',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              background: 'linear-gradient(135deg, var(--purple-600) 0%, var(--purple-800) 100%)',
               borderRadius: '12px',
               display: 'flex',
               alignItems: 'center',
@@ -113,7 +113,7 @@ export default function DetailModal({ item, onClose, onValidasi, onBatal, onLapo
             👤
           </div>
           <div>
-            <div style={{ fontSize: '20px', fontWeight: 700, color: '#2d3748' }}>
+            <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--gray-800)' }}>
               {userNama}{' '}
               {item.inputManual && (
                 <span
@@ -133,7 +133,7 @@ export default function DetailModal({ item, onClose, onValidasi, onBatal, onLapo
                 </span>
               )}
             </div>
-            <div style={{ display: 'flex', gap: '15px', marginTop: '5px', color: '#718096', fontSize: '13px' }}>
+            <div style={{ display: 'flex', gap: '15px', marginTop: '5px', color: 'var(--gray-600)', fontSize: '13px' }}>
               <span>NIS: {item.nisnSiswa}</span>
               <span>•</span>
               <span>Kelas: {item.kelasSiswa || '-'}</span>
@@ -164,25 +164,25 @@ export default function DetailModal({ item, onClose, onValidasi, onBatal, onLapo
               display: 'grid',
               gridTemplateColumns: 'repeat(2, 1fr)',
               gap: '15px',
-              background: '#f8f9ff',
+              background: 'var(--purple-50)',
               padding: '15px',
               borderRadius: '12px',
             }}
           >
             <div>
-              <div style={{ color: '#718096', fontSize: '12px' }}>Tanggal Validasi</div>
-              <div style={{ fontWeight: 600, color: '#2d3748' }}>{item.tanggalValidasi || '-'}</div>
+              <div style={{ color: 'var(--gray-600)', fontSize: '12px' }}>Tanggal Validasi</div>
+              <div style={{ fontWeight: 600, color: 'var(--gray-800)' }}>{item.tanggalValidasi || '-'}</div>
             </div>
             <div>
-              <div style={{ color: '#718096', fontSize: '12px' }}>Jam Validasi</div>
-              <div style={{ fontWeight: 600, color: '#2d3748' }}>{item.jamValidasi || '-'}</div>
+              <div style={{ color: 'var(--gray-600)', fontSize: '12px' }}>Jam Validasi</div>
+              <div style={{ fontWeight: 600, color: 'var(--gray-800)' }}>{item.jamValidasi || '-'}</div>
             </div>
             <div>
-              <div style={{ color: '#718096', fontSize: '12px' }}>Status Validasi</div>
+              <div style={{ color: 'var(--gray-600)', fontSize: '12px' }}>Status Validasi</div>
               <div><span className={`status-badge ${statusValidasiClass}`}>{item.statusValidasi || 'Belum Divalidasi'}</span></div>
             </div>
             <div>
-              <div style={{ color: '#718096', fontSize: '12px' }}>Status Konseling</div>
+              <div style={{ color: 'var(--gray-600)', fontSize: '12px' }}>Status Konseling</div>
               <div><span className={`status-badge status-${(item.status || 'Proses').toLowerCase()}`}>{item.status || 'Proses'}</span></div>
             </div>
           </div>
@@ -199,7 +199,7 @@ export default function DetailModal({ item, onClose, onValidasi, onBatal, onLapo
                 par ? <p key={i} style={{ marginBottom: '10px' }}>{par}</p> : <br key={i} />
               )}
           </div>
-          <div style={{ marginTop: '10px', fontSize: '12px', color: '#718096', display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ marginTop: '10px', fontSize: '12px', color: 'var(--gray-600)', display: 'flex', justifyContent: 'flex-end' }}>
             <span>Diajukan pada: {item.tanggalPengajuan || item.tanggal || '-'}</span>
           </div>
         </div>
@@ -240,7 +240,7 @@ export default function DetailModal({ item, onClose, onValidasi, onBatal, onLapo
           <div className="validation-title">
             <span
               style={{
-                background: '#667eea',
+                background: 'var(--purple-600)',
                 color: 'white',
                 width: '32px',
                 height: '32px',
@@ -279,10 +279,10 @@ export default function DetailModal({ item, onClose, onValidasi, onBatal, onLapo
             style={{
               marginTop: '20px',
               padding: '15px',
-              background: '#fff3cd',
+              background: 'var(--coral-50)',
               borderRadius: '10px',
               fontSize: '13px',
-              color: '#856404',
+              color: 'var(--coral-800)',
               display: 'flex',
               gap: '10px',
               alignItems: 'center',

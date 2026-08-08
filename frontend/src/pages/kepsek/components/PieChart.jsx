@@ -7,7 +7,7 @@ export default function PieChart({ stats }) {
     .sort((a, b) => b.value - a.value);
 
   if (data.length === 0) {
-    return <div style={{ textAlign: 'center', color: '#718096' }}>Belum ada data</div>;
+    return <div style={{ textAlign: 'center', color: 'var(--gray-600)' }}>Belum ada data</div>;
   }
 
   const total = data.reduce((sum, d) => sum + d.value, 0);
@@ -46,7 +46,7 @@ export default function PieChart({ stats }) {
           }}
         >
           <div style={{ fontSize: '24px', fontWeight: 700 }}>{total}</div>
-          <div style={{ fontSize: '11px', color: '#718096' }}>Total Kasus</div>
+          <div style={{ fontSize: '11px', color: 'var(--gray-600)' }}>Total Kasus</div>
         </div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
@@ -56,10 +56,10 @@ export default function PieChart({ stats }) {
             <div key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px' }}>
               <div style={{ width: '10px', height: '10px', background: item.color, borderRadius: '2px', flexShrink: 0 }} />
               <div style={{ width: '72px', flexShrink: 0, fontWeight: 600 }}>{item.label}</div>
-              <div style={{ flex: 1, background: '#e2e8f0', height: '10px', borderRadius: '6px', overflow: 'hidden' }}>
+              <div style={{ flex: 1, background: 'var(--gray-100)', height: '10px', borderRadius: '6px', overflow: 'hidden' }}>
                 <div style={{ width: `${persen}%`, background: item.color, height: '10px' }} />
               </div>
-              <div style={{ width: '78px', textAlign: 'right', flexShrink: 0, color: '#4a5568' }}>
+              <div style={{ width: '78px', textAlign: 'right', flexShrink: 0, color: 'var(--gray-600)' }}>
                 {item.value} ({persen}%)
               </div>
             </div>

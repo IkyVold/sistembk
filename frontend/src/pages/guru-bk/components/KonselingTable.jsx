@@ -19,22 +19,22 @@ export default function KonselingTable({
 }) {
   if (data.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '60px 20px', color: '#718096' }}>
+      <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--gray-600)' }}>
         <div style={{ fontSize: '64px', marginBottom: '20px', opacity: 0.5 }}>📋</div>
-        <div style={{ fontSize: '20px', fontWeight: 700, marginBottom: '10px', color: '#2d3748' }}>
+        <div style={{ fontSize: '20px', fontWeight: 700, marginBottom: '10px', color: 'var(--gray-800)' }}>
           Tidak ada data konseling
         </div>
-        <div style={{ fontSize: '15px', color: '#718096' }}>{emptyMessage}</div>
+        <div style={{ fontSize: '15px', color: 'var(--gray-600)' }}>{emptyMessage}</div>
         <div
           style={{
             marginTop: '20px',
             padding: '15px',
-            background: '#f8f9ff',
+            background: 'var(--purple-50)',
             borderRadius: '12px',
             display: 'inline-block',
           }}
         >
-          <span style={{ color: '#667eea' }}>⏳ Data akan muncul ketika siswa memilih Anda sebagai guru BK</span>
+          <span style={{ color: 'var(--purple-600)' }}>⏳ Data akan muncul ketika siswa memilih Anda sebagai guru BK</span>
         </div>
       </div>
     );
@@ -105,8 +105,8 @@ export default function KonselingTable({
                   style={{
                     display: 'inline-block',
                     padding: '3px 10px',
-                    background: '#e3f2fd',
-                    color: '#1565c0',
+                    background: 'var(--purple-50)',
+                    color: 'var(--purple-800)',
                     borderRadius: '12px',
                     fontSize: '12px',
                     fontWeight: 600,
@@ -119,8 +119,8 @@ export default function KonselingTable({
                 <span
                   style={{
                     fontSize: '11px',
-                    background: '#fff3cd',
-                    color: '#856404',
+                    background: 'var(--coral-50)',
+                    color: 'var(--coral-800)',
                     padding: '3px 8px',
                     borderRadius: '10px',
                     fontWeight: 600,
@@ -140,7 +140,7 @@ export default function KonselingTable({
                     alignItems: 'center',
                     gap: '5px',
                     padding: '4px 10px',
-                    background: '#e2e8f0',
+                    background: 'var(--gray-100)',
                     borderRadius: '20px',
                     fontSize: '12px',
                   }}
@@ -164,7 +164,7 @@ export default function KonselingTable({
               </td>
               <td>
                 {hasLaporan ? (
-                  <span className="status-badge status-selesai" style={{ background: '#d4edda' }}>
+                  <span className="status-badge status-selesai" style={{ background: 'var(--teal-50)' }}>
                     ✅ Ada
                   </span>
                 ) : (

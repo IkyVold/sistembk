@@ -41,7 +41,7 @@ export default function RekapGuruTab({ semuaKonseling, onExportExcel }) {
                   <tr key={guru.id}>
                     <td>{index + 1}</td>
                     <td>{guru.nama}</td>
-                    <td colSpan={10} style={{ color: '#718096', textAlign: 'center' }}>
+                    <td colSpan={10} style={{ color: 'var(--gray-600)', textAlign: 'center' }}>
                       Belum ada data konseling
                     </td>
                   </tr>

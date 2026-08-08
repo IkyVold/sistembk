@@ -1,8 +1,8 @@
 const BARS = [
-  { key: 'proses', label: 'Proses', color: '#ffc107' },
-  { key: 'selesai', label: 'Selesai', color: '#28a745' },
-  { key: 'dibatalkan', label: 'Dibatalkan', color: '#dc3545' },
-  { key: 'tervalidasi', label: 'Tervalidasi', color: '#004085' },
+  { key: 'proses', label: 'Proses', color: 'var(--coral-400)' },
+  { key: 'selesai', label: 'Selesai', color: 'var(--teal-400)' },
+  { key: 'dibatalkan', label: 'Dibatalkan', color: 'var(--red-600)' },
+  { key: 'tervalidasi', label: 'Tervalidasi', color: 'var(--purple-800)' },
 ];
 
 export default function StatusBarChart({ stats }) {
@@ -13,7 +13,7 @@ export default function StatusBarChart({ stats }) {
       {BARS.map((bar) => (
         <div key={bar.key}>
           <strong>{bar.label}</strong> <span style={{ float: 'right' }}>{stats[bar.key]}</span>
-          <div style={{ background: '#e2e8f0', height: '8px', borderRadius: '4px', marginTop: '4px' }}>
+          <div style={{ background: 'var(--gray-100)', height: '8px', borderRadius: '4px', marginTop: '4px' }}>
             <div
               style={{
                 width: `${(stats[bar.key] / max) * 100}%`,

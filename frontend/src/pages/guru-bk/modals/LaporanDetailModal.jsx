@@ -17,7 +17,7 @@ export default function LaporanDetailModal({ item, onClose }) {
 
   return (
     <Modal show={Boolean(item)} onClose={onClose} title="📄 Detail Laporan Konseling" footer={footer}>
-      <div className="laporan-box" style={{ background: '#e8f5e9' }}>
+      <div className="laporan-box" style={{ background: 'var(--teal-50)' }}>
         <div className="laporan-title">
           <span>📋</span> Laporan Hasil Konseling
         </div>

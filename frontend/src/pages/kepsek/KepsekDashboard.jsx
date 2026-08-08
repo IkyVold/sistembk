@@ -6,7 +6,6 @@ import DashboardTab from './DashboardTab';
 import RekapGuruTab from './RekapGuruTab';
 import SemuaKonselingTab from './SemuaKonselingTab';
 import StatistikTab from './StatistikTab';
-import LaporanEvaluasiTab from './LaporanEvaluasiTab';
 import DetailModal from './modals/DetailModal';
 import { fetchKonselingAll } from './api';
 import { mapKonselingRow } from './helpers';
@@ -107,9 +106,6 @@ export default function KepsekDashboard() {
             <SemuaKonselingTab semuaKonseling={semuaKonseling} onDetail={setDetailItemId} onExportExcel={notImplemented} />
           )}
           {activeTab === 'statistik' && <StatistikTab semuaKonseling={semuaKonseling} />}
-          {activeTab === 'laporan' && (
-            <LaporanEvaluasiTab semuaKonseling={semuaKonseling} onExportPDF={notImplemented} />
-          )}
         </div>
       </div>
 

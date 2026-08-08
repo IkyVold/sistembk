@@ -3,7 +3,6 @@ const MENU_ITEMS = [
   { key: 'rekap-guru', icon: '👨‍🏫', label: 'Rekap Guru BK' },
   { key: 'semua-konseling', icon: '📋', label: 'Semua Konseling' },
   { key: 'statistik', icon: '📈', label: 'Statistik Lengkap' },
-  { key: 'laporan', icon: '📑', label: 'Laporan Evaluasi' },
 ];
 
 export default function Sidebar({ activeTab, onSelect }) {

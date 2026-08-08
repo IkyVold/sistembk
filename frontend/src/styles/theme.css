@@ -1,0 +1,42 @@
+/*
+ * DESAIN TOKEN GLOBAL — satu-satunya sumber warna untuk seluruh aplikasi
+ * (Siswa, Guru BK, Kepala Sekolah). Sebelumnya tiap dashboard punya palet
+ * warna sendiri-sendiri (indigo di Guru BK, navy di Kepala Sekolah, coklat
+ * hangat di Siswa) sehingga terlihat seperti 3 aplikasi berbeda.
+ *
+ * File ini di-import sekali secara global (lihat src/main.jsx) supaya
+ * variabel di bawah tersedia di semua halaman, apa pun stylesheet lokalnya.
+ */
+:root {
+  /* Warna utama / brand (ungu hangat) */
+  --purple-50: #EEEDFE;
+  --purple-100: #CECBF6;
+  --purple-400: #7F77DD;
+  --purple-600: #534AB7;
+  --purple-800: #3C3489;
+  --purple-900: #26215C;
+
+  /* Aksen kedua (teal) — dipakai untuk status positif/selesai */
+  --teal-50: #E1F5EE;
+  --teal-400: #1D9E75;
+  --teal-600: #0F6E56;
+
+  /* Netral hangat — dipakai untuk teks, border, background kartu */
+  --gray-50: #F1EFE8;
+  --gray-100: #D3D1C7;
+  --gray-400: #888780;
+  --gray-600: #5F5E5A;
+  --gray-800: #444441;
+
+  /* Aksen ketiga (coral) — dipakai untuk peringatan/perhatian */
+  --coral-50: #FAECE7;
+  --coral-400: #D85A30;
+  --coral-800: #712B13;
+
+  /* Status bahaya/gagal/dibatalkan */
+  --red-50: #FCEBEB;
+  --red-600: #A32D2D;
+
+  /* Background halaman default */
+  --bg-page: #f5f4f0;
+}

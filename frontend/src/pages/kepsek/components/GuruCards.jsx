@@ -15,7 +15,7 @@ export default function GuruCards({ semuaKonseling }) {
   if (guruStats.length === 0) {
     return (
       <div className="guru-grid">
-        <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px', color: '#718096' }}>
+        <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px', color: 'var(--gray-600)' }}>
           Belum ada aktivitas konseling
         </div>
       </div>

@@ -89,13 +89,13 @@ export default function LaporanModal({ item, onClose, onSave }) {
         </div>
         <div className="validation-field">
           <label>Siswa:</label>
-          <div style={{ flex: 1, padding: '10px', background: '#f0f0f0', borderRadius: '8px' }}>
+          <div style={{ flex: 1, padding: '10px', background: 'var(--gray-50)', borderRadius: '8px' }}>
             <strong>{item.namaSiswa}</strong> ({item.nisnSiswa})
           </div>
         </div>
         <div className="validation-field">
           <label>Tanggal/Jam:</label>
-          <div style={{ flex: 1, padding: '10px', background: '#f0f0f0', borderRadius: '8px' }}>
+          <div style={{ flex: 1, padding: '10px', background: 'var(--gray-50)', borderRadius: '8px' }}>
             {item.tanggal} • {item.jam}
           </div>
         </div>

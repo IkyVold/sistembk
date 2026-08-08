@@ -233,55 +233,6 @@
             word-wrap: break-word;
         }
 
-        /* ===== WHATSAPP LINK ===== */
-        .status-page .wa-card {
-            background: #F0FAF5;
-            border: 1px solid #A7D9BC;
-            border-radius: var(--radius-xl);
-            padding: 20px 28px;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-        }
-
-        .status-page .wa-info p:first-child {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--success);
-            margin-bottom: 3px;
-        }
-
-        .status-page .wa-info p:last-child {
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-
-        .status-page .wa-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: #1A7A4A;
-            color: white;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 600;
-            padding: 10px 20px;
-            border-radius: 100px;
-            white-space: nowrap;
-            transition: all 0.2s;
-            box-shadow: 0 2px 8px rgba(26,122,74,0.25);
-        }
-
-        .status-page .wa-btn:hover {
-            background: #15623C;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(26,122,74,0.3);
-        }
-
-        .status-page .wa-btn svg { flex-shrink: 0; }
-
         /* ===== ACTIONS ===== */
         .status-page .actions {
             display: flex;
@@ -557,5 +508,4 @@
             .status-page .btn { justify-content: center; }
             .status-page .chat-modal { width: calc(100vw - 32px); right: 16px; }
             .status-page .chatbot-fab { bottom: 20px; right: 20px; }
-            .status-page .wa-card { flex-direction: column; align-items: flex-start; }
         }

@@ -44,7 +44,7 @@ export default function SemuaKonselingTab({ semuaKonseling, onDetail, onExportEx
           onChange={(e) => setSearch(e.target.value)}
         />
         <select
-          style={{ padding: '10px', border: '2px solid #e2e8f0', borderRadius: '8px' }}
+          style={{ padding: '10px', border: '2px solid var(--gray-100)', borderRadius: '8px' }}
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
         >
@@ -54,7 +54,7 @@ export default function SemuaKonselingTab({ semuaKonseling, onDetail, onExportEx
           <option value="Dibatalkan">Dibatalkan</option>
         </select>
         <select
-          style={{ padding: '10px', border: '2px solid #e2e8f0', borderRadius: '8px' }}
+          style={{ padding: '10px', border: '2px solid var(--gray-100)', borderRadius: '8px' }}
           value={laporanFilter}
           onChange={(e) => setLaporanFilter(e.target.value)}
         >

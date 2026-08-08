@@ -23,7 +23,7 @@ export default function InformasiTab({
         <div className="table-header" style={{ borderBottom: 'none', paddingBottom: 0 }}>
           <h3>💡 Informasi &amp; FAQ untuk Chatbot Siswa</h3>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <div style={{ fontSize: '13px', color: '#718096' }}>
+            <div style={{ fontSize: '13px', color: 'var(--gray-600)' }}>
               {isLoading ? 'Memuat data...' : `${totalCount} informasi tersimpan`}
             </div>
             <button
@@ -71,17 +71,17 @@ export default function InformasiTab({
 
         <div>
           {isLoading && (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#718096' }}>⏳ Memuat informasi...</div>
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--gray-600)' }}>⏳ Memuat informasi...</div>
           )}
           {loadError && (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#e53e3e' }}>
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--red-600)' }}>
               ❌ Gagal memuat informasi. Pastikan server berjalan.
             </div>
           )}
           {!isLoading && !loadError && informasiList.length === 0 && (
             <div className="siswa-empty">
               <div className="empty-icon">💡</div>
-              <div style={{ fontSize: '18px', fontWeight: 700, color: '#2d3748', marginBottom: '8px' }}>
+              <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--gray-800)', marginBottom: '8px' }}>
                 Belum ada informasi
               </div>
               <div style={{ fontSize: '14px' }}>

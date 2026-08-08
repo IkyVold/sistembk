@@ -22,7 +22,7 @@ export default function SiswaTab({
         <div className="table-header" style={{ borderBottom: 'none', paddingBottom: 0 }}>
           <h3>👥 Daftar Siswa Terdaftar</h3>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <div style={{ fontSize: '13px', color: '#718096' }}>
+            <div style={{ fontSize: '13px', color: 'var(--gray-600)' }}>
               {isLoading ? 'Memuat data...' : `${siswaList.length} dari ${totalCount} siswa`}
             </div>
             <button
@@ -62,17 +62,17 @@ export default function SiswaTab({
 
         <div>
           {isLoading && (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#718096' }}>⏳ Memuat daftar siswa...</div>
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--gray-600)' }}>⏳ Memuat daftar siswa...</div>
           )}
           {loadError && (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#e53e3e' }}>
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--red-600)' }}>
               ❌ Gagal memuat data siswa. Pastikan server berjalan.
             </div>
           )}
           {!isLoading && !loadError && siswaList.length === 0 && (
             <div className="siswa-empty">
               <div className="empty-icon">👥</div>
-              <div style={{ fontSize: '18px', fontWeight: 700, color: '#2d3748', marginBottom: '8px' }}>
+              <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--gray-800)', marginBottom: '8px' }}>
                 Tidak ada siswa ditemukan
               </div>
               <div style={{ fontSize: '14px' }}>Coba ubah kata kunci atau filter</div>
@@ -102,8 +102,8 @@ export default function SiswaTab({
                         style={{
                           display: 'inline-block',
                           padding: '3px 10px',
-                          background: '#e3f2fd',
-                          color: '#1565c0',
+                          background: 'var(--purple-50)',
+                          color: 'var(--purple-800)',
                           borderRadius: '12px',
                           fontSize: '12px',
                           fontWeight: 600,
@@ -117,8 +117,8 @@ export default function SiswaTab({
                         <span
                           style={{
                             fontSize: '11px',
-                            background: '#fff3cd',
-                            color: '#856404',
+                            background: 'var(--coral-50)',
+                            color: 'var(--coral-800)',
                             padding: '3px 8px',
                             borderRadius: '10px',
                             fontWeight: 600,
@@ -127,7 +127,7 @@ export default function SiswaTab({
                           {s.tahun_ajaran}
                         </span>
                       ) : (
-                        <span style={{ color: '#a0aec0', fontSize: '12px' }}>—</span>
+                        <span style={{ color: 'var(--gray-400)', fontSize: '12px' }}>—</span>
                       )}
                     </td>
                     <td>

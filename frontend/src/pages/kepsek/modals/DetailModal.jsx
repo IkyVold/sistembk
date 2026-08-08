@@ -43,11 +43,11 @@ export default function DetailModal({ item, onClose }) {
     );
   } else if (item.status === 'Selesai') {
     laporanContent = (
-      <div className="laporan-box" style={{ background: '#fff3cd', borderLeftColor: '#ffc107' }}>
-        <div className="laporan-title" style={{ color: '#856404' }}>
+      <div className="laporan-box" style={{ background: 'var(--coral-50)', borderLeftColor: 'var(--coral-400)' }}>
+        <div className="laporan-title" style={{ color: 'var(--coral-800)' }}>
           <span>⚠️</span> Belum Ada Laporan
         </div>
-        <p style={{ fontSize: '13px', color: '#856404' }}>
+        <p style={{ fontSize: '13px', color: 'var(--coral-800)' }}>
           Konseling ini sudah selesai tetapi belum memiliki laporan hasil konseling dari Guru BK.
         </p>
       </div>

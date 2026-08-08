@@ -69,23 +69,23 @@ export default function RiwayatKelasModal({ siswa, onClose, onKelasAktifBerubah 
 
   return (
     <ModalKelas show={Boolean(siswa)} onClose={onClose} title={`📚 Riwayat Kelas — ${siswa.nama}`}>
-      <div style={{ background: '#f8f9ff', borderRadius: '10px', padding: '12px 16px', marginBottom: '18px', fontSize: '13px', color: '#4a5568' }}>
+      <div style={{ background: 'var(--purple-50)', borderRadius: '10px', padding: '12px 16px', marginBottom: '18px', fontSize: '13px', color: 'var(--gray-600)' }}>
         <strong>NIS:</strong> {siswa.nis} &nbsp;|&nbsp; <strong>Nama:</strong> {siswa.nama}
       </div>
 
       <div>
         {riwayat === null && !loadError && (
-          <p style={{ color: '#718096', fontSize: '13px', textAlign: 'center', padding: '10px' }}>
+          <p style={{ color: 'var(--gray-600)', fontSize: '13px', textAlign: 'center', padding: '10px' }}>
             ⏳ Memuat riwayat kelas...
           </p>
         )}
         {loadError && (
-          <p style={{ color: '#e53e3e', fontSize: '13px', textAlign: 'center', padding: '10px' }}>
+          <p style={{ color: 'var(--red-600)', fontSize: '13px', textAlign: 'center', padding: '10px' }}>
             ❌ Gagal memuat riwayat kelas. Pastikan server berjalan.
           </p>
         )}
         {riwayat && riwayat.length === 0 && (
-          <p style={{ color: '#718096', fontSize: '13px', textAlign: 'center', padding: '12px', background: '#f9f9f9', borderRadius: '8px', marginBottom: '16px' }}>
+          <p style={{ color: 'var(--gray-600)', fontSize: '13px', textAlign: 'center', padding: '12px', background: 'var(--gray-50)', borderRadius: '8px', marginBottom: '16px' }}>
             Belum ada riwayat kelas. Tambahkan di bawah.
           </p>
         )}
@@ -106,15 +106,15 @@ export default function RiwayatKelasModal({ siswa, onClose, onKelasAktifBerubah 
                   <tr key={row.id}>
                     <td><span className="badge-tahun">{row.tahun_ajaran}</span></td>
                     <td>
-                      <span className="badge-kelas-aktif" style={isAktif ? undefined : { background: '#f0f0f0', color: '#718096' }}>
+                      <span className="badge-kelas-aktif" style={isAktif ? undefined : { background: 'var(--gray-50)', color: 'var(--gray-600)' }}>
                         {row.kelas}
                       </span>
                     </td>
                     <td>
                       {isAktif ? (
-                        <span style={{ color: '#38a169', fontWeight: 700, fontSize: '12px' }}>● Aktif</span>
+                        <span style={{ color: 'var(--teal-400)', fontWeight: 700, fontSize: '12px' }}>● Aktif</span>
                       ) : (
-                        <span style={{ color: '#a0aec0', fontSize: '12px' }}>Arsip</span>
+                        <span style={{ color: 'var(--gray-400)', fontSize: '12px' }}>Arsip</span>
                       )}
                     </td>
                     <td>
@@ -149,11 +149,11 @@ export default function RiwayatKelasModal({ siswa, onClose, onKelasAktifBerubah 
           </div>
         </div>
         <div style={{ marginBottom: '10px' }}>
-          <label style={{ fontSize: '12px', fontWeight: 600, color: '#718096', marginBottom: '4px', display: 'block' }}>
+          <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--gray-600)', marginBottom: '4px', display: 'block' }}>
             Status
           </label>
           <select
-            style={{ width: '100%', padding: '9px 12px', border: '1px solid #ddd', borderRadius: '8px', fontSize: '13px' }}
+            style={{ width: '100%', padding: '9px 12px', border: '1px solid var(--gray-100)', borderRadius: '8px', fontSize: '13px' }}
             value={status}
             onChange={(e) => setStatus(e.target.value)}
           >

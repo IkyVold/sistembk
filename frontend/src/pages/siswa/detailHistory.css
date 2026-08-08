@@ -143,24 +143,6 @@
             word-break: break-word;
         }
 
-        /* ===== WHATSAPP LINK ===== */
-        .detail-history-page .wa-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: #0F6E56;
-            color: #fff;
-            padding: 9px 18px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 500;
-            transition: background 0.15s;
-        }
-
-        .detail-history-page .wa-link:hover { background: #085041; }
-        .detail-history-page .wa-link svg { width: 15px; height: 15px; }
-
         /* ===== LAPORAN CARD ===== */
         .detail-history-page .laporan-card {
             background: #fff;
