@@ -14,7 +14,12 @@ router.get('/push/vapid-public-key', authenticate, notifikasiController.getVapid
 router.post('/push/subscribe', authenticate, requireRole('siswa'), notifikasiController.subscribe);
 router.post('/push/unsubscribe', authenticate, requireRole('siswa'), notifikasiController.unsubscribe);
 
-// Riwayat notifikasi (path spesifik dulu)
+// Riwayat notifikasi Guru BK (path spesifik dulu)
+router.get('/notifikasi-guru/:username', authenticate, requireRole('guru', 'admin'), notifikasiController.listGuru);
+router.put('/notifikasi-guru/:id/read', authenticate, requireRole('guru', 'admin'), notifikasiController.markReadGuru);
+router.put('/notifikasi-guru/:username/read-all', authenticate, requireRole('guru', 'admin'), notifikasiController.markAllReadGuru);
+
+// Riwayat notifikasi siswa (path spesifik dulu)
 router.put('/notifikasi/:id/read', authenticate, requireRole('siswa', 'guru', 'admin'), notifikasiController.markRead);
 router.put('/notifikasi/:nis/read-all', authenticate, requireSelfOrStaff('nis'), notifikasiController.markAllRead);
 router.get('/notifikasi/:nis', authenticate, requireSelfOrStaff('nis'), notifikasiController.list);

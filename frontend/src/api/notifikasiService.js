@@ -25,6 +25,31 @@ export async function tandaiSemuaNotifikasiDibaca(nis) {
   }
 }
 
+// ===== Notifikasi Guru BK =====
+
+export async function fetchNotifikasiGuru(username, limit = 30) {
+  const { data } = await axiosClient.get(`/api/notifikasi-guru/${username}`, { params: { limit } });
+  return data; // { notifikasi: [...], unreadCount }
+}
+
+export async function tandaiNotifikasiGuruDibaca(id) {
+  try {
+    const { data } = await axiosClient.put(`/api/notifikasi-guru/${id}/read`);
+    return { success: true, data };
+  } catch (error) {
+    return { success: false, error: extractErrorMessage(error, 'Gagal menandai notifikasi') };
+  }
+}
+
+export async function tandaiSemuaNotifikasiGuruDibaca(username) {
+  try {
+    const { data } = await axiosClient.put(`/api/notifikasi-guru/${username}/read-all`);
+    return { success: true, data };
+  } catch (error) {
+    return { success: false, error: extractErrorMessage(error, 'Gagal menandai semua notifikasi') };
+  }
+}
+
 // ===== Web Push subscription =====
 
 function urlBase64ToUint8Array(base64String) {

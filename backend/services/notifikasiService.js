@@ -24,6 +24,13 @@ async function initTables() {
   } catch (err) {
     console.error('❌ Error membuat tabel push_subscriptions:', err.message);
   }
+
+  try {
+    await notifikasiModel.ensureNotifikasiGuruTable();
+    console.log('✅ Tabel notifikasi_guru siap');
+  } catch (err) {
+    console.error('❌ Error membuat tabel notifikasi_guru:', err.message);
+  }
 }
 
 /** GET kunci publik VAPID — sama seperti handler lama. */
@@ -108,6 +115,47 @@ async function markAllRead(nis) {
   await notifikasiModel.markAllReadBySiswaId(siswaRows[0].id);
 }
 
+/** Riwayat notifikasi Guru BK by username. */
+async function listByGuruUsername(username, limitQuery) {
+  if (!username) throw new HttpError(400, 'Username guru wajib diisi');
+  const limit = Math.min(parseInt(limitQuery, 10) || 30, 100);
+  try {
+    const rows = await notifikasiModel.listByGuruUsername(username, limit);
+    const unreadCount = await notifikasiModel.countUnreadGuru(username);
+    return {
+      notifikasi: rows.map((r) => ({ ...r, isRead: !!r.isRead })),
+      unreadCount: Number(unreadCount) || 0,
+    };
+  } catch (err) {
+    console.error('❌ listByGuruUsername error:', err.message);
+    // Jangan biarkan 500 mentah — coba buat tabel lalu ulang sekali
+    try {
+      await notifikasiModel.ensureNotifikasiGuruTable();
+      const rows = await notifikasiModel.listByGuruUsername(username, limit);
+      const unreadCount = await notifikasiModel.countUnreadGuru(username);
+      return {
+        notifikasi: rows.map((r) => ({ ...r, isRead: !!r.isRead })),
+        unreadCount: Number(unreadCount) || 0,
+      };
+    } catch (err2) {
+      console.error('❌ listByGuruUsername retry gagal:', err2.message);
+      throw new HttpError(500, `Gagal memuat notifikasi guru: ${err2.message}`);
+    }
+  }
+}
+
+async function markReadGuru(id) {
+  const result = await notifikasiModel.markReadGuruById(id);
+  if (result.affectedRows === 0) {
+    throw new HttpError(404, 'Notifikasi tidak ditemukan');
+  }
+}
+
+async function markAllReadGuru(username) {
+  if (!username) throw new HttpError(400, 'Username guru wajib diisi');
+  await notifikasiModel.markAllReadByGuruUsername(username);
+}
+
 module.exports = {
   initTables,
   getVapidKey,
@@ -116,4 +164,7 @@ module.exports = {
   listByNis,
   markRead,
   markAllRead,
+  listByGuruUsername,
+  markReadGuru,
+  markAllReadGuru,
 };

@@ -1,9 +1,13 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { io } from 'socket.io-client';
 import { useAuth } from '../../context/AuthContext';
 import { activateRoleToken, getTokenForRole } from '../../api/tokenStore';
 import { uploadFotoGuruBk, deleteFotoGuruBk } from '../../api/akunService';
 import { mediaUrl } from '../../utils/mediaUrl';
+import { fetchNotifikasiGuru, tandaiSemuaNotifikasiGuruDibaca } from '../../api/notifikasiService';
+
+const SOCKET_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 import Sidebar from './components/Sidebar';
 import KonselingTab from './KonselingTab';
 import SiswaTab from './SiswaTab';
@@ -116,14 +120,77 @@ export default function GuruBkDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentGuru]);
 
+  // ===== Notifikasi realtime Guru BK (pengajuan baru / batal siswa) =====
+  const [guruNotifUnread, setGuruNotifUnread] = useState(0);
+  const [guruNotifList, setGuruNotifList] = useState([]);
+  const [guruNotifOpen, setGuruNotifOpen] = useState(false);
+  const [guruNotifToast, setGuruNotifToast] = useState(null);
+  const socketRef = useRef(null);
+
+  useEffect(() => {
+    if (!currentGuru?.username) return undefined;
+
+    // Muat riwayat + unread awal
+    fetchNotifikasiGuru(currentGuru.username)
+      .then(({ notifikasi, unreadCount }) => {
+        setGuruNotifList(Array.isArray(notifikasi) ? notifikasi : []);
+        setGuruNotifUnread(unreadCount || 0);
+      })
+      .catch((err) => console.warn('Gagal muat notifikasi guru:', err));
+
+    const token = getTokenForRole('guru') || activateRoleToken('guru');
+    const socket = io(SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+      auth: token ? { token } : undefined,
+    });
+    socketRef.current = socket;
+
+    const joinRoom = () => {
+      socket.emit('join-guru-notif', { username: currentGuru.username });
+    };
+    socket.on('connect', joinRoom);
+    socket.on('reconnect', joinRoom);
+
+    socket.on('notifikasi-guru-baru', (payload) => {
+      const item = {
+        id: payload?.id,
+        konselingId: payload?.konselingId,
+        tipe: payload?.tipe,
+        judul: payload?.judul || 'Notifikasi baru',
+        pesan: payload?.pesan || '',
+        isRead: false,
+        createdAt: payload?.createdAt || new Date().toISOString(),
+      };
+      setGuruNotifList((prev) => [item, ...prev].slice(0, 30));
+      setGuruNotifUnread((c) => c + 1);
+      setGuruNotifToast({ judul: item.judul, pesan: item.pesan });
+      loadSemuaKonseling(currentGuru);
+      setTimeout(() => setGuruNotifToast(null), 6000);
+    });
+
+    return () => {
+      socket.off('notifikasi-guru-baru');
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [currentGuru, loadSemuaKonseling]);
+
+  async function handleClearGuruNotif() {
+    if (!currentGuru?.username) return;
+    await tandaiSemuaNotifikasiGuruDibaca(currentGuru.username);
+    setGuruNotifUnread(0);
+    setGuruNotifList((prev) => prev.map((n) => ({ ...n, isRead: true })));
+  }
+
   // Notifikasi di judul tab browser
   const prosesCount = useMemo(
     () => semuaKonseling.filter((item) => item.status === 'Proses' && item.statusValidasi !== 'Tervalidasi').length,
     [semuaKonseling]
   );
   useEffect(() => {
-    document.title = prosesCount > 0 ? `(${prosesCount}) Dashboard Guru BK - Stop Bullying` : 'Dashboard Guru BK - Stop Bullying';
-  }, [prosesCount]);
+    const badge = Math.max(prosesCount, guruNotifUnread);
+    document.title = badge > 0 ? `(${badge}) Dashboard Guru BK - Stop Bullying` : 'Dashboard Guru BK - Stop Bullying';
+  }, [prosesCount, guruNotifUnread]);
 
   const stats = useMemo(() => {
     const total = semuaKonseling.length;
@@ -481,6 +548,29 @@ export default function GuruBkDashboard() {
 
   return (
     <div className="guru-bk-page">
+      {guruNotifToast && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 16,
+            right: 16,
+            zIndex: 3000,
+            maxWidth: 360,
+            background: '#1a1a18',
+            color: '#fff',
+            borderRadius: 12,
+            padding: '14px 16px',
+            boxShadow: '0 8px 28px rgba(0,0,0,0.25)',
+            cursor: 'pointer',
+          }}
+          onClick={() => setGuruNotifToast(null)}
+          role="status"
+        >
+          <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4 }}>{guruNotifToast.judul}</div>
+          <div style={{ fontSize: 12.5, opacity: 0.9, lineHeight: 1.4 }}>{guruNotifToast.pesan}</div>
+        </div>
+      )}
+
       <div className="header">
         <div className="logo-section">
           <div className="logo">📚</div>
@@ -489,7 +579,124 @@ export default function GuruBkDashboard() {
             <p>Stop Bullying - Monitoring &amp; Validasi Konseling Siswa</p>
           </div>
         </div>
-        <div className="user-info">
+        <div className="user-info" style={{ position: 'relative' }}>
+          {/* Lonceng notifikasi — selalu tampil */}
+          <div style={{ position: 'relative', marginRight: 10 }}>
+            <button
+              type="button"
+              onClick={() => setGuruNotifOpen((o) => !o)}
+              title="Notifikasi"
+              style={{
+                background: 'rgba(255,255,255,0.15)',
+                border: 'none',
+                color: '#fff',
+                borderRadius: 20,
+                padding: '6px 12px',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <span>🔔</span>
+              {guruNotifUnread > 0 ? (
+                <span
+                  style={{
+                    background: '#E24B4A',
+                    color: '#fff',
+                    borderRadius: 10,
+                    minWidth: 18,
+                    height: 18,
+                    fontSize: 11,
+                    lineHeight: '18px',
+                    textAlign: 'center',
+                    padding: '0 5px',
+                  }}
+                >
+                  {guruNotifUnread}
+                </span>
+              ) : (
+                <span style={{ opacity: 0.85, fontSize: 11 }}>Notif</span>
+              )}
+            </button>
+
+            {guruNotifOpen && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 8px)',
+                  right: 0,
+                  width: 320,
+                  maxHeight: 360,
+                  overflowY: 'auto',
+                  background: '#fff',
+                  color: '#1a1a18',
+                  borderRadius: 12,
+                  boxShadow: '0 12px 40px rgba(0,0,0,0.2)',
+                  zIndex: 2500,
+                  border: '1px solid #e8e6dc',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '12px 14px',
+                    borderBottom: '1px solid #eee',
+                    position: 'sticky',
+                    top: 0,
+                    background: '#fff',
+                  }}
+                >
+                  <strong style={{ fontSize: 13 }}>Notifikasi</strong>
+                  {guruNotifUnread > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleClearGuruNotif}
+                      style={{
+                        border: 'none',
+                        background: 'none',
+                        color: '#534AB7',
+                        fontSize: 12,
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                      }}
+                    >
+                      Tandai dibaca
+                    </button>
+                  )}
+                </div>
+                {guruNotifList.length === 0 ? (
+                  <div style={{ padding: 20, textAlign: 'center', color: '#888', fontSize: 13 }}>
+                    Belum ada notifikasi.
+                  </div>
+                ) : (
+                  guruNotifList.map((n) => (
+                    <div
+                      key={n.id || `${n.createdAt}-${n.judul}`}
+                      style={{
+                        padding: '12px 14px',
+                        borderBottom: '1px solid #f0eee6',
+                        background: n.isRead ? '#fff' : '#F5F3FF',
+                      }}
+                    >
+                      <div style={{ fontWeight: 650, fontSize: 12.5, marginBottom: 4 }}>{n.judul}</div>
+                      <div style={{ fontSize: 12, color: '#5F5E5A', lineHeight: 1.4 }}>{n.pesan}</div>
+                      {n.createdAt && (
+                        <div style={{ fontSize: 11, color: '#999', marginTop: 6 }}>
+                          {new Date(n.createdAt).toLocaleString('id-ID')}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+
           <label className="user-avatar user-avatar-editable" title="Klik untuk ganti foto profil" style={{ cursor: 'pointer', overflow: 'hidden' }}>
             {currentGuru.foto_profile ? (
               <img src={mediaUrl(currentGuru.foto_profile)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />

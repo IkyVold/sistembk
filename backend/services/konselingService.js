@@ -1,10 +1,23 @@
 // services/konselingService.js
 // Logika bisnis endpoint konseling (validasi, notifikasi, laporan, walk-in).
 const HttpError = require('../utils/HttpError');
-const { kirimNotifikasiJadwal } = require('./notifikasiDispatch');
+const { kirimNotifikasiJadwal, kirimNotifikasiGuru } = require('./notifikasiDispatch');
 const konselingModel = require('../models/konselingModel');
 const siswaModel = require('../models/siswaModel');
 const riwayatKelasModel = require('../models/riwayatKelasModel');
+const guruBkModel = require('../models/guruBkModel');
+
+/** Resolve username Guru BK dari nama (field konseling.guru_bk). */
+async function resolveGuruUsernameByNama(namaGuru) {
+  if (!namaGuru) return null;
+  try {
+    const rows = await guruBkModel.findByNama(namaGuru);
+    if (rows.length > 0) return rows[0].username;
+  } catch (e) {
+    console.warn('Gagal resolve username guru dari nama:', e.message);
+  }
+  return null;
+}
 
 /** Migrasi kolom tabel konseling (idempotent). */
 async function initMigrations() {
@@ -87,7 +100,7 @@ async function resolveKelasSnapshot(nis, fallbackKelas) {
 
 /** POST /api/konseling — pengajuan baru oleh siswa. */
 async function createPengajuan(body) {
-  const { nis, guru_bk, tanggal, jam, jenis, kategori, deskripsi } = body;
+  const { nis, guru_bk, guru_username, tanggal, jam, jenis, kategori, deskripsi } = body;
 
   if (!nis || !guru_bk || !tanggal || !jam || !jenis || !kategori || !deskripsi) {
     throw new HttpError(400, 'Semua field harus diisi');
@@ -110,6 +123,27 @@ async function createPengajuan(body) {
     siswaId, guru_bk, tanggal, jam, jenis, kategori,
     deskripsi: deskripsi.trim(), kelasSnapshot,
   });
+
+  // Notifikasi ke Guru BK: pengajuan baru
+  try {
+    let guruUsername = (guru_username && String(guru_username).trim()) || null;
+    if (!guruUsername) {
+      guruUsername = await resolveGuruUsernameByNama(guru_bk);
+    }
+    console.log(
+      `ℹ️  [notif-guru] pengajuan id=${result.insertId} guru_bk="${guru_bk}" username=${guruUsername || '(tidak ketemu)'}`
+    );
+    const namaSiswa = siswaRows[0].nama || nis;
+    await kirimNotifikasiGuru({
+      guruUsername,
+      konselingId: result.insertId,
+      tipe: 'pengajuan',
+      judul: 'Pengajuan Konseling Baru',
+      pesan: `${namaSiswa} (NIS ${nis}) mengajukan konseling ${jenis} — kategori ${kategori} pada ${tanggal} pukul ${jam}.`,
+    });
+  } catch (e) {
+    console.warn('Gagal kirim notifikasi pengajuan ke guru:', e.message);
+  }
 
   return {
     message: 'Pengajuan konseling berhasil disimpan',
@@ -351,6 +385,20 @@ async function batalkanOlehSiswa(id, { alasan }, user) {
   const result = await konselingModel.updateBatalkanSiswa(id, alasanTrim);
   if (result.affectedRows === 0) {
     throw new HttpError(400, 'Pengajuan tidak dapat dibatalkan (mungkin status sudah berubah)');
+  }
+
+  // Notifikasi ke Guru BK: siswa membatalkan
+  try {
+    const guruUsername = await resolveGuruUsernameByNama(existing.guru_bk);
+    await kirimNotifikasiGuru({
+      guruUsername,
+      konselingId: id,
+      tipe: 'pembatalan',
+      judul: 'Pengajuan Konseling Dibatalkan Siswa',
+      pesan: `${existing.nama_siswa || existing.nis} (NIS ${existing.nis}) membatalkan pengajuan konseling pada ${existing.tanggal} pukul ${existing.jam}. Alasan: ${alasanTrim}`,
+    });
+  } catch (e) {
+    console.warn('Gagal kirim notifikasi pembatalan ke guru:', e.message);
   }
 
   return {

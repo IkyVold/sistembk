@@ -103,7 +103,7 @@ async function updateKelasByNis(nis, kelas) {
 }
 
 async function findIdAndKelasByNis(nis) {
-  const [rows] = await pool.query('SELECT id, kelas FROM siswa WHERE nis = ?', [nis]);
+  const [rows] = await pool.query('SELECT id, kelas, nama FROM siswa WHERE nis = ?', [nis]);
   return rows;
 }
 

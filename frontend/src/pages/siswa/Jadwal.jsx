@@ -65,6 +65,7 @@ export default function Jadwal() {
       const { data } = await axiosClient.post('/api/konseling', {
         nis: siswa?.nis,
         guru_bk: guruNama,
+        guru_username: localStorage.getItem('guruUsername') || undefined,
         tanggal,
         jam,
         jenis: jenisKonseling,

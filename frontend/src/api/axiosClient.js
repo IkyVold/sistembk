@@ -25,6 +25,7 @@ function resolveTokenForRequest(config) {
     (url.includes('/konseling-bk') ||
       url.includes('/konseling/walkin') ||
       url.includes('/validasi') ||
+      url.includes('/notifikasi-guru') ||
       url.includes('/siswa/import') ||
       url.includes('/api/siswa') ||
       url.endsWith('/siswa') ||

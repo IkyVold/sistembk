@@ -38,8 +38,9 @@ export default function PilihGuru() {
   }, []);
 
   function handlePilih(counselor) {
-    // Tetap simpan nama — field guru_bk di konseling memakai nama guru
+    // Nama dipakai field guru_bk; username untuk notifikasi andal ke Guru BK
     localStorage.setItem('guruNama', counselor.nama);
+    localStorage.setItem('guruUsername', counselor.username || '');
     localStorage.setItem('guruSpesialisasi', counselor.spesialisasi || 'Guru BK');
     localStorage.setItem('guruNpsn', counselor.npsn || '');
     localStorage.setItem('guruAlamat', counselor.alamat || '');

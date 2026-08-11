@@ -51,6 +51,23 @@ function registerChatSocket(io) {
             }
         });
 
+        // Join room notifikasi Guru BK
+        socket.on('join-guru-notif', (data) => {
+            try {
+                const username = typeof data === 'string' ? data : data?.username;
+                if (!username) return;
+                // Hanya izinkan join room milik sendiri
+                if (socket.user?.role === 'guru' && String(socket.user.username) !== String(username)) {
+                    console.warn(`⚠️  Guru ${socket.user.username} mencoba join room ${username} — ditolak`);
+                    return;
+                }
+                socket.join(`guru-notif-${username}`);
+                console.log(`📌 Guru ${username} join room notifikasi (socket: ${socket.id})`);
+            } catch (error) {
+                console.error('Error in join-guru-notif:', error);
+            }
+        });
+
         // Join chat room
         socket.on('join-chat', async (data) => {
             try {

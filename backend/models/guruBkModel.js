@@ -79,10 +79,10 @@ async function listAll() {
   return rows;
 }
 
-/** Daftar aktif untuk halaman Pilih Guru (tanpa password/username sensitif). */
+/** Daftar aktif untuk halaman Pilih Guru. Username ikut untuk notifikasi andal. */
 async function listActivePublic() {
   const [rows] = await pool.query(
-    `SELECT id, nama, spesialisasi, npsn, alamat, avatar, foto_profile
+    `SELECT id, username, nama, spesialisasi, npsn, alamat, avatar, foto_profile
      FROM guru_bk WHERE is_active = 1 ORDER BY nama ASC`
   );
   return rows;
@@ -102,6 +102,39 @@ async function findByUsername(username) {
   const [rows] = await pool.query(
     'SELECT id, username, nama, avatar, foto_profile, is_active FROM guru_bk WHERE username = ?',
     [username]
+  );
+  return rows;
+}
+
+/**
+ * Cari guru aktif berdasarkan nama atau username.
+ * Matching: exact → trim → case-insensitive → username.
+ */
+async function findByNama(nama) {
+  if (!nama || !String(nama).trim()) return [];
+  const key = String(nama).trim();
+
+  // 1) Exact
+  let [rows] = await pool.query(
+    `SELECT id, username, nama, avatar, foto_profile, is_active
+     FROM guru_bk WHERE nama = ? AND is_active = 1 LIMIT 1`,
+    [key]
+  );
+  if (rows.length) return rows;
+
+  // 2) Case-insensitive
+  [rows] = await pool.query(
+    `SELECT id, username, nama, avatar, foto_profile, is_active
+     FROM guru_bk WHERE LOWER(TRIM(nama)) = LOWER(?) AND is_active = 1 LIMIT 1`,
+    [key]
+  );
+  if (rows.length) return rows;
+
+  // 3) Username (kalau form kirim username)
+  [rows] = await pool.query(
+    `SELECT id, username, nama, avatar, foto_profile, is_active
+     FROM guru_bk WHERE username = ? AND is_active = 1 LIMIT 1`,
+    [key]
   );
   return rows;
 }
@@ -144,6 +177,7 @@ module.exports = {
   listActivePublic,
   findByUsernamePassword,
   findByUsername,
+  findByNama,
   findById,
   updateFotoProfile,
   clearFotoProfile,

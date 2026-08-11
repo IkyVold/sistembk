@@ -1,6 +1,7 @@
 // controllers/notifikasiController.js
 const notifikasiService = require('../services/notifikasiService');
 const { asyncHandler } = require('../middleware/errorHandler');
+const HttpError = require('../utils/HttpError');
 
 const getVapidPublicKey = asyncHandler(async (req, res) => {
   const result = notifikasiService.getVapidKey();
@@ -32,6 +33,28 @@ const markAllRead = asyncHandler(async (req, res) => {
   res.json({ success: true });
 });
 
+const listGuru = asyncHandler(async (req, res) => {
+  // Hanya boleh akses username sendiri (kecuali admin)
+  if (req.user.role === 'guru' && String(req.user.username) !== String(req.params.username)) {
+    throw new HttpError(403, 'Anda hanya dapat mengakses notifikasi milik sendiri');
+  }
+  const data = await notifikasiService.listByGuruUsername(req.params.username, req.query.limit);
+  res.json(data);
+});
+
+const markReadGuru = asyncHandler(async (req, res) => {
+  await notifikasiService.markReadGuru(req.params.id);
+  res.json({ success: true });
+});
+
+const markAllReadGuru = asyncHandler(async (req, res) => {
+  if (req.user.role === 'guru' && String(req.user.username) !== String(req.params.username)) {
+    throw new HttpError(403, 'Anda hanya dapat mengakses notifikasi milik sendiri');
+  }
+  await notifikasiService.markAllReadGuru(req.params.username);
+  res.json({ success: true });
+});
+
 module.exports = {
   getVapidPublicKey,
   subscribe,
@@ -39,4 +62,7 @@ module.exports = {
   list,
   markRead,
   markAllRead,
+  listGuru,
+  markReadGuru,
+  markAllReadGuru,
 };

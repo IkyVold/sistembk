@@ -118,9 +118,56 @@ function isWebPushPackageLoaded() {
   return !!webpush;
 }
 
+/**
+ * Notifikasi ke Guru BK (DB + Socket.IO realtime).
+ * Room: guru-notif-{username}
+ */
+async function kirimNotifikasiGuru({
+  guruUsername,
+  konselingId,
+  tipe,
+  judul,
+  pesan,
+}) {
+  if (!guruUsername) {
+    console.log('⚠️  [notif-guru] Dilewati — guruUsername kosong');
+    return;
+  }
+
+  try {
+    const result = await notifikasiModel.insertGuru({
+      guruUsername,
+      konselingId,
+      tipe: tipe || 'pengajuan',
+      judul,
+      pesan,
+    });
+
+    const payload = {
+      id: result.insertId,
+      konselingId: konselingId || null,
+      tipe: tipe || 'pengajuan',
+      judul,
+      pesan,
+      isRead: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    if (io) {
+      const room = `guru-notif-${guruUsername}`;
+      const socketsDiRoom = await io.in(room).fetchSockets();
+      console.log(`ℹ️  [realtime] Emit ke room "${room}" — ${socketsDiRoom.length} koneksi aktif.`);
+      io.to(room).emit('notifikasi-guru-baru', payload);
+    }
+  } catch (err) {
+    console.error('❌ Error kirimNotifikasiGuru:', err.message);
+  }
+}
+
 module.exports = {
   configure,
   kirimNotifikasiJadwal,
+  kirimNotifikasiGuru,
   kirimPushKeSiswa,
   getVapidPublicKey,
   isWebPushPackageLoaded,
