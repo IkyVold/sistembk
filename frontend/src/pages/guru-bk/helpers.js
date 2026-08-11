@@ -74,6 +74,7 @@ export function mapKonselingRow(row, currentGuru) {
     jenis: row.jenis,
     kategori: row.kategori,
     deskripsi: row.deskripsi || 'Tidak ada deskripsi masalah',
+    alasanBatal: row.alasan_batal || null,
     tanggalPengajuan: row.created_at
       ? formatTanggal(String(row.created_at).split('T')[0])
       : row.tanggal

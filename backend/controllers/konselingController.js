@@ -40,6 +40,15 @@ const batalkan = asyncHandler(async (req, res) => {
   res.json({ success: true, message: result.message });
 });
 
+const batalkanOlehSiswa = asyncHandler(async (req, res) => {
+  const result = await konselingService.batalkanOlehSiswa(
+    req.params.id,
+    { alasan: req.body.alasan },
+    req.user
+  );
+  res.json({ success: true, message: result.message, alasan: result.alasan });
+});
+
 const listByNis = asyncHandler(async (req, res) => {
   res.json(await konselingService.listByNis(req.params.nis));
 });
@@ -57,6 +66,7 @@ module.exports = {
   simpanLaporan,
   walkin,
   batalkan,
+  batalkanOlehSiswa,
   listByNis,
   getDetail,
 };

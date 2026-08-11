@@ -24,6 +24,7 @@ const SELECT_KONSELING_FULL = `
   DATE_FORMAT(k.laporan_tanggal, '%Y-%m-%d') AS laporan_tanggal,
   TIME_FORMAT(k.laporan_waktu, '%H:%i') AS laporan_waktu,
   k.laporan_created_at,
+  k.alasan_batal,
   k.created_at
 `;
 
@@ -76,7 +77,7 @@ async function listByGuru(guru) {
 
 async function findForValidasi(id) {
   const [rows] = await pool.query(
-    `SELECT k.siswa_id, k.status_validasi,
+    `SELECT k.siswa_id, k.status, k.status_validasi,
             DATE_FORMAT(k.tanggal, '%Y-%m-%d') AS tanggalLama,
             TIME_FORMAT(k.jam, '%H:%i') AS jamLama
      FROM konseling k WHERE k.id = ?`,
@@ -89,7 +90,7 @@ async function updateValidasi(id, { tanggal, jam }) {
   const [result] = await pool.query(
     `UPDATE konseling
      SET tanggal = ?, jam = ?, tanggal_validasi = ?, jam_validasi = ?, status_validasi = 'Tervalidasi'
-     WHERE id = ?`,
+     WHERE id = ? AND status = 'Proses'`,
     [tanggal, jam, tanggal, jam, id]
   );
   return result;
@@ -97,7 +98,9 @@ async function updateValidasi(id, { tanggal, jam }) {
 
 async function findForStatus(id) {
   const [rows] = await pool.query(
-    `SELECT siswa_id, DATE_FORMAT(tanggal, '%Y-%m-%d') AS tanggal, TIME_FORMAT(jam, '%H:%i') AS jam
+    `SELECT siswa_id, status,
+            DATE_FORMAT(tanggal, '%Y-%m-%d') AS tanggal,
+            TIME_FORMAT(jam, '%H:%i') AS jam
      FROM konseling WHERE id = ?`,
     [id]
   );
@@ -105,8 +108,9 @@ async function findForStatus(id) {
 }
 
 async function updateStatus(id, status) {
+  // Hanya boleh ubah jika status saat ini masih Proses (bukan final)
   const [result] = await pool.query(
-    'UPDATE konseling SET status = ? WHERE id = ?',
+    `UPDATE konseling SET status = ? WHERE id = ? AND status = 'Proses'`,
     [status, id]
   );
   return result;
@@ -170,6 +174,31 @@ async function findStatusById(id) {
   return rows;
 }
 
+/** Data untuk pembatalan oleh siswa: cek ownership + status. */
+async function findForBatalkanSiswa(id) {
+  const [rows] = await pool.query(
+    `SELECT k.id, k.siswa_id, k.status, k.guru_bk,
+            DATE_FORMAT(k.tanggal, '%Y-%m-%d') AS tanggal,
+            TIME_FORMAT(k.jam, '%H:%i') AS jam,
+            s.nis, s.nama AS nama_siswa
+     FROM konseling k
+     JOIN siswa s ON s.id = k.siswa_id
+     WHERE k.id = ?`,
+    [id]
+  );
+  return rows;
+}
+
+async function updateBatalkanSiswa(id, alasan) {
+  const [result] = await pool.query(
+    `UPDATE konseling
+     SET status = 'Dibatalkan', alasan_batal = ?
+     WHERE id = ? AND status = 'Proses'`,
+    [alasan, id]
+  );
+  return result;
+}
+
 async function deleteById(id) {
   await pool.query('DELETE FROM konseling WHERE id = ?', [id]);
 }
@@ -198,6 +227,7 @@ async function listBySiswaId(siswaId) {
       laporan_status_penanganan,
       laporan_catatan_tambahan,
       laporan_created_at,
+      alasan_batal,
       created_at
      FROM konseling
      WHERE siswa_id = ?
@@ -235,6 +265,8 @@ module.exports = {
   updateLaporanFirst,
   insertWalkin,
   findStatusById,
+  findForBatalkanSiswa,
+  updateBatalkanSiswa,
   deleteById,
   listBySiswaId,
   findDetailById,

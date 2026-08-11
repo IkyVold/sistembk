@@ -16,18 +16,22 @@ function resolveTokenForRequest(config) {
   const url = String(config.url || '');
   const method = String(config.method || 'get').toLowerCase();
 
+  // Endpoint siswa untuk batalkan konseling (jangan pakai token guru)
+  const isSiswaBatalEndpoint = url.includes('/batal-siswa');
+
   // Endpoint hanya untuk Guru BK (dan admin)
   const isGuruEndpoint =
-    url.includes('/konseling-bk') ||
-    url.includes('/konseling/walkin') ||
-    url.includes('/validasi') ||
-    url.includes('/siswa/import') ||
-    url.includes('/api/siswa') ||
-    url.endsWith('/siswa') ||
-    (url.includes('/konseling/') && (method === 'put' || method === 'delete' || method === 'post')) ||
-    (url.includes('/guru-bk/') && url.includes('/foto')) ||
-    (url.includes('/riwayat-kelas') && method !== 'get') ||
-    (url.includes('/informasi') && method !== 'get');
+    !isSiswaBatalEndpoint &&
+    (url.includes('/konseling-bk') ||
+      url.includes('/konseling/walkin') ||
+      url.includes('/validasi') ||
+      url.includes('/siswa/import') ||
+      url.includes('/api/siswa') ||
+      url.endsWith('/siswa') ||
+      (url.includes('/konseling/') && (method === 'put' || method === 'delete' || method === 'post')) ||
+      (url.includes('/guru-bk/') && url.includes('/foto')) ||
+      (url.includes('/riwayat-kelas') && method !== 'get') ||
+      (url.includes('/informasi') && method !== 'get'));
 
   // Admin endpoints
   const isAdminEndpoint = url.includes('/api/admin/');

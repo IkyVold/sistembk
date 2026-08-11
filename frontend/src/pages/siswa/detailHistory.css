@@ -228,6 +228,93 @@
         .detail-history-page .btn-primary:hover { background: #3C3489; }
         .detail-history-page .btn-primary:active { transform: scale(0.97); }
 
+        .detail-history-page .btn-batal {
+            background: #fff;
+            border: 0.5px solid #E24B4A;
+            color: #A32D2D;
+        }
+
+        .detail-history-page .btn-batal:hover { background: #FCEBEB; }
+        .detail-history-page .btn-batal:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        /* ===== MODAL BATALKAN ===== */
+        .detail-history-page .batal-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(20, 20, 18, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 16px;
+        }
+
+        .detail-history-page .batal-modal {
+            background: #fff;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 440px;
+            padding: 24px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+        }
+
+        .detail-history-page .batal-modal-title {
+            margin: 0 0 8px;
+            font-size: 1.1rem;
+            font-weight: 650;
+            color: #1a1a18;
+        }
+
+        .detail-history-page .batal-modal-desc {
+            margin: 0 0 16px;
+            font-size: 0.9rem;
+            color: #5F5E5A;
+            line-height: 1.45;
+        }
+
+        .detail-history-page .batal-modal-label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 550;
+            color: #3d3d3a;
+            margin-bottom: 6px;
+        }
+
+        .detail-history-page .batal-modal-label span {
+            font-weight: 400;
+            color: #888780;
+        }
+
+        .detail-history-page .batal-modal-textarea {
+            width: 100%;
+            box-sizing: border-box;
+            border: 0.5px solid #d3d1c7;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 96px;
+            color: #1a1a18;
+            background: #FAF9F5;
+        }
+
+        .detail-history-page .batal-modal-textarea:focus {
+            outline: none;
+            border-color: #534AB7;
+            background: #fff;
+        }
+
+        .detail-history-page .batal-modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 16px;
+        }
+
         /* ===== CHATBOT ===== */
         .detail-history-page .chatbot-button {
             position: fixed;

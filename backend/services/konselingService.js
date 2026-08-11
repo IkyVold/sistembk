@@ -59,6 +59,17 @@ async function initMigrations() {
     }
   }
   console.log('✅ Kolom validasi jadwal siap di tabel konseling');
+
+  try {
+    await konselingModel.runAlter(
+      `ALTER TABLE konseling ADD COLUMN alasan_batal TEXT NULL AFTER status_validasi`
+    );
+    console.log('✅ Kolom alasan_batal ditambahkan ke tabel konseling');
+  } catch (err) {
+    if (err.code !== 'ER_DUP_FIELDNAME') {
+      console.error('❌ Error migrasi kolom alasan_batal:', err.message);
+    }
+  }
 }
 
 async function resolveKelasSnapshot(nis, fallbackKelas) {
@@ -131,9 +142,17 @@ async function validasi(id, { tanggal, jam }) {
   }
   const existing = existingRows[0];
 
+  // Guard: tidak boleh validasi sesi yang sudah Selesai / Dibatalkan
+  if (existing.status !== 'Proses') {
+    throw new HttpError(
+      400,
+      `Konseling berstatus "${existing.status}" tidak dapat divalidasi. Hanya pengajuan berstatus Proses yang boleh divalidasi atau diubah jadwalnya.`
+    );
+  }
+
   const result = await konselingModel.updateValidasi(id, { tanggal, jam });
   if (result.affectedRows === 0) {
-    throw new HttpError(404, 'Data konseling tidak ditemukan');
+    throw new HttpError(400, 'Validasi gagal. Pastikan status konseling masih Proses.');
   }
 
   const sudahTervalidasi = existing.status_validasi === 'Tervalidasi';
@@ -174,14 +193,27 @@ async function updateStatus(id, status) {
   if (existingRows.length === 0) {
     throw new HttpError(404, 'Data konseling tidak ditemukan');
   }
+  const existing = existingRows[0];
+
+  // Guard: status final tidak boleh diubah lagi
+  if (existing.status === 'Selesai' || existing.status === 'Dibatalkan') {
+    throw new HttpError(
+      400,
+      `Status "${existing.status}" bersifat final dan tidak dapat diubah lagi.`
+    );
+  }
+
+  // Dari Proses: izinkan ke Dibatalkan (utama). Set Selesai idealnya lewat laporan.
+  if (status === existing.status) {
+    return { message: 'Status tidak berubah' };
+  }
 
   const result = await konselingModel.updateStatus(id, status);
   if (result.affectedRows === 0) {
-    throw new HttpError(404, 'Data konseling tidak ditemukan');
+    throw new HttpError(400, 'Gagal mengubah status. Pastikan status masih Proses.');
   }
 
   if (status === 'Dibatalkan') {
-    const existing = existingRows[0];
     await kirimNotifikasiJadwal({
       siswaId: existing.siswa_id,
       konselingId: id,
@@ -275,7 +307,7 @@ async function createWalkin(body) {
   };
 }
 
-/** DELETE /api/konseling/:id — batalkan pengajuan (hanya status Proses). */
+/** DELETE /api/konseling/:id — batalkan pengajuan (hanya status Proses). Hard delete untuk "Konsul Ulang". */
 async function batalkan(id) {
   const rows = await konselingModel.findStatusById(id);
   if (rows.length === 0) {
@@ -286,6 +318,45 @@ async function batalkan(id) {
   }
   await konselingModel.deleteById(id);
   return { message: 'Pengajuan konseling berhasil dibatalkan' };
+}
+
+/**
+ * PUT /api/konseling/:id/batal-siswa — soft cancel oleh siswa dari Detail Riwayat.
+ * Hanya status Proses, wajib alasan, hanya pemilik data.
+ */
+async function batalkanOlehSiswa(id, { alasan }, user) {
+  const alasanTrim = (alasan || '').trim();
+  if (alasanTrim.length < 10) {
+    throw new HttpError(400, 'Alasan pembatalan minimal 10 karakter');
+  }
+
+  const rows = await konselingModel.findForBatalkanSiswa(id);
+  if (rows.length === 0) {
+    throw new HttpError(404, 'Data konseling tidak ditemukan');
+  }
+  const existing = rows[0];
+
+  if (existing.status !== 'Proses') {
+    throw new HttpError(400, 'Hanya pengajuan berstatus Proses yang bisa dibatalkan');
+  }
+
+  // Ownership: siswa hanya boleh batalkan milik sendiri
+  if (user?.role === 'siswa') {
+    const userNis = user.nis != null ? String(user.nis) : null;
+    if (!userNis || userNis !== String(existing.nis)) {
+      throw new HttpError(403, 'Anda hanya dapat membatalkan pengajuan milik sendiri');
+    }
+  }
+
+  const result = await konselingModel.updateBatalkanSiswa(id, alasanTrim);
+  if (result.affectedRows === 0) {
+    throw new HttpError(400, 'Pengajuan tidak dapat dibatalkan (mungkin status sudah berubah)');
+  }
+
+  return {
+    message: 'Pengajuan konseling berhasil dibatalkan',
+    alasan: alasanTrim,
+  };
 }
 
 /** GET /api/konseling/:nis — riwayat milik satu siswa. */
@@ -316,6 +387,7 @@ module.exports = {
   simpanLaporan,
   createWalkin,
   batalkan,
+  batalkanOlehSiswa,
   listByNis,
   getDetail,
 };

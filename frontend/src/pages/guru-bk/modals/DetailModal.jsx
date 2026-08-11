@@ -197,6 +197,20 @@ export default function DetailModal({ item, onClose, onValidasi, onBatal, onLapo
         </div>
       </div>
 
+      {item.status === 'Dibatalkan' && item.alasanBatal && (
+        <div className="detail-row">
+          <div className="detail-label">Alasan Pembatalan:</div>
+          <div className="detail-value">
+            <div
+              className="detail-deskripsi"
+              style={{ background: '#FDF6F6', border: '1px solid #F0B8B8', borderRadius: 10, padding: 12 }}
+            >
+              {item.alasanBatal}
+            </div>
+          </div>
+        </div>
+      )}
+
       {laporan && (
         <div className="laporan-box">
           <div className="laporan-title">

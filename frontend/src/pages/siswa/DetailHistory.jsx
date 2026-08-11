@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
-import axiosClient from '../../api/axiosClient';
+import axiosClient, { extractErrorMessage } from '../../api/axiosClient';
 import './detailHistory.css';
 
 const SYSTEM_PROMPT = {
@@ -140,6 +140,9 @@ export default function DetailHistory() {
   const navigate = useNavigate();
   const [item, setItem] = useState(null);
   const [connConnected, setConnConnected] = useState(false);
+  const [showBatalModal, setShowBatalModal] = useState(false);
+  const [alasanBatal, setAlasanBatal] = useState('');
+  const [batalLoading, setBatalLoading] = useState(false);
 
   useEffect(() => {
     axiosClient
@@ -186,6 +189,31 @@ export default function DetailHistory() {
     navigate('/chat-siswa');
   }
 
+  async function handleBatalkan() {
+    const alasan = alasanBatal.trim();
+    if (alasan.length < 10) {
+      alert('Alasan pembatalan minimal 10 karakter.');
+      return;
+    }
+    if (!confirm('Apakah Anda yakin ingin membatalkan pengajuan konseling ini?')) return;
+
+    setBatalLoading(true);
+    try {
+      const { data } = await axiosClient.put(`/api/konseling/${id}/batal-siswa`, { alasan });
+      if (!data.success) throw new Error(data.error || 'Gagal membatalkan');
+      alert('✅ Pengajuan konseling berhasil dibatalkan.');
+      setShowBatalModal(false);
+      setAlasanBatal('');
+      // Refresh data agar status & alasan tampil
+      const refreshed = await axiosClient.get(`/api/konseling/detail/${id}`);
+      setItem(refreshed.data);
+    } catch (err) {
+      alert(`❌ ${extractErrorMessage(err, 'Gagal membatalkan pengajuan')}`);
+    } finally {
+      setBatalLoading(false);
+    }
+  }
+
   if (!item) {
     return (
       <div className="detail-history-page">
@@ -221,7 +249,8 @@ export default function DetailHistory() {
   if (laporan.statusPenanganan?.includes('Selesai')) laporanStatusClass = 'badge-selesai';
   else if (laporan.statusPenanganan?.includes('Monitoring')) laporanStatusClass = 'badge-proses';
 
-  const showChatBtn = item.jenis === 'Daring' && isTervalidasi;
+  const showChatBtn = item.jenis === 'Daring' && isTervalidasi && status !== 'Dibatalkan';
+  const canBatalkan = status === 'Proses';
 
   return (
     <div className="detail-history-page">
@@ -345,11 +374,30 @@ export default function DetailHistory() {
           </div>
         )}
 
+        {status === 'Dibatalkan' && item.alasan_batal && (
+          <div className="desc-card" style={{ borderColor: '#F0B8B8', background: '#FDF6F6' }}>
+            <div className="desc-label" style={{ color: '#A32D2D' }}>Alasan Pembatalan</div>
+            <p className="desc-text">{item.alasan_batal}</p>
+          </div>
+        )}
+
         <div className="action-row">
           <Link to="/history" className="btn btn-outline">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 5l-7 7 7 7" /></svg>
             Kembali ke Riwayat
           </Link>
+          {canBatalkan && (
+            <button
+              className="btn btn-batal"
+              type="button"
+              onClick={() => setShowBatalModal(true)}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" /><path d="M15 9l-6 6M9 9l6 6" />
+              </svg>
+              Batalkan Pengajuan
+            </button>
+          )}
           {showChatBtn && (
             <button className="btn btn-primary" onClick={handleStartChat}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -360,6 +408,47 @@ export default function DetailHistory() {
           )}
         </div>
       </div>
+
+      {showBatalModal && (
+        <div className="batal-modal-overlay" onClick={() => !batalLoading && setShowBatalModal(false)}>
+          <div className="batal-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="batal-modal-title">Batalkan Pengajuan Konseling</h3>
+            <p className="batal-modal-desc">
+              Pengajuan akan ditandai sebagai <strong>Dibatalkan</strong>. Mohon isi alasan pembatalan.
+            </p>
+            <label className="batal-modal-label" htmlFor="alasan-batal">
+              Alasan pembatalan <span>(min. 10 karakter)</span>
+            </label>
+            <textarea
+              id="alasan-batal"
+              className="batal-modal-textarea"
+              rows={4}
+              value={alasanBatal}
+              onChange={(e) => setAlasanBatal(e.target.value)}
+              placeholder="Contoh: Jadwal bentrok dengan kegiatan sekolah / ada kesalahan pada deskripsi masalah..."
+              disabled={batalLoading}
+            />
+            <div className="batal-modal-actions">
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => setShowBatalModal(false)}
+                disabled={batalLoading}
+              >
+                Tutup
+              </button>
+              <button
+                type="button"
+                className="btn btn-batal"
+                onClick={handleBatalkan}
+                disabled={batalLoading || alasanBatal.trim().length < 10}
+              >
+                {batalLoading ? 'Memproses…' : 'Ya, Batalkan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <DetailChatbot />
     </div>
