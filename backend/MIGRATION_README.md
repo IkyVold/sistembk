@@ -1,58 +1,67 @@
 # Backend Refactor — Stop Bullying (BK System)
 
-Refactor bertahap dari `server.js` monolitik menuju pola
-`services/` → `controllers/` → `routes/`, dengan penanganan error
-terpusat (`middleware/errorHandler.js` + `utils/HttpError.js`).
+Arsitektur berlapis (pure refactor, perilaku API tidak diubah):
 
-## Yang sudah direfactor (tahap 1)
-- `POST /api/register` dan `POST /api/login` (auth siswa)
-  - `services/authService.js` — semua query database
-  - `controllers/authController.js` — request/response
-  - `routes/authRoutes.js` — definisi route, dipasang di `server.js`
-    lewat `app.use('/api', authRoutes)`
+```
+routes/  →  controllers/  →  services/  →  models/  →  MySQL
+                              ↑
+                    utils/ + middleware/
+socket/  →  services/chatService  →  models/chatModel
+```
 
-Semua route lain (profile, konseling, chat, siswa, dsb) **masih di
-`server.js` seperti aslinya** — sengaja belum disentuh supaya perubahan
-bisa diverifikasi bertahap, sesuai pola yang sama dipakai di refactor
-sistem monitoring Poktan sebelumnya (services layer + HttpError +
-error handler terpusat, dipasang modul demi modul).
+## Layer
+
+| Layer | Tanggung jawab |
+|-------|----------------|
+| **routes/** | Definisi endpoint + middleware (multer, dsb.) |
+| **controllers/** | req/res + `asyncHandler` |
+| **services/** | Validasi & logika bisnis |
+| **models/** | Pure query SQL (satu-satunya yang pakai `pool`) |
+| **socket/** | Handler Socket.IO (event name & payload sama) |
+| **utils/** | `HttpError`, `sanitize` |
+| **middleware/** | `asyncHandler`, `errorHandler` |
+
+## Models
+
+- `siswaModel.js` — tabel `siswa`
+- `riwayatKelasModel.js` — tabel `riwayat_kelas`
+- `informasiModel.js` — tabel `informasi_bk`
+- `konselingModel.js` — tabel `konseling`
+- `notifikasiModel.js` — tabel `notifikasi` + `push_subscriptions`
+- `chatModel.js` — tabel `chat_messages`
 
 ## Menjalankan
 
 ```bash
 npm install
-cp .env.example .env   # kalau belum ada, isi kredensial Groq API, dsb
+cp .env.example .env
+npm start
 ```
 
-Pastikan `database.js` mengarah ke MySQL yang benar (host/user/password/
-nama database), lalu:
+Semua endpoint, event Socket.IO, Web Push, dan response shape
+**tidak diubah** — hanya pemisahan folder/layer.
+
+
+## JWT Authentication
+
+Hampir semua endpoint (kecuali login) wajib header:
+
+```
+Authorization: Bearer <token>
+```
+
+Token didapat dari response login (`token` field).
+
+Role:
+- `siswa` — data sendiri, ajukan konseling, chat AI, notifikasi
+- `guru` — daftar siswa, validasi, laporan, foto profil guru
+- `kepsek` — monitoring semua konseling
+- `admin` — CRUD akun guru/kepsek
+
+Socket.IO: kirim `auth: { token }` saat connect.
+
+Env: `JWT_SECRET`, `JWT_EXPIRES_IN` (default 12h).
 
 ```bash
-npm start        # atau: npm run dev (pakai nodemon)
+npm install
 ```
-
-## Struktur baru
-
-```
-services/authService.js       # query siswa: register & login
-controllers/authController.js # req/res handling, pakai asyncHandler
-routes/authRoutes.js           # POST /register, POST /login
-middleware/errorHandler.js     # asyncHandler + errorHandler
-utils/HttpError.js             # class error dengan statusCode
-```
-
-## Pola untuk migrasi modul berikutnya
-Setiap kelompok endpoint (mis. `konseling`, `siswa`, `profile`) bisa
-dipindah dengan pola yang sama:
-
-1. Pindahkan query DB ke `services/<nama>Service.js`, lempar
-   `throw new HttpError(status, pesan)` untuk kondisi gagal.
-2. Buat `controllers/<nama>Controller.js` yang membungkus pemanggilan
-   service dengan `asyncHandler`.
-3. Buat `routes/<nama>Routes.js`, lalu mount di `server.js` dengan
-   `app.use('/api', xRoutes)`.
-4. Hapus handler lama yang sudah dipindah dari `server.js`.
-
-`app.use(errorHandler)` sudah dipasang paling akhir di `server.js`,
-jadi begitu satu modul dipindah ke pola `asyncHandler`, error di
-dalamnya otomatis tertangani tanpa perlu try/catch manual lagi.

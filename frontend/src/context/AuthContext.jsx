@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback } from 'react';
+import { clearToken, activateRoleToken } from '../api/tokenStore';
 
 const AuthContext = createContext(null);
 
@@ -6,14 +7,23 @@ const STORAGE_KEYS = {
   siswa: 'isLoggedIn',
   guru: 'guruBKLoggedIn',
   kepsek: 'kepsekLoggedIn',
+  admin: 'adminMasterLoggedIn',
 };
 
-// Baca session yang mungkin sudah tersimpan dari localStorage saat pertama kali load,
-// supaya perilaku "tetap login setelah refresh" seperti versi HTML lama tetap jalan.
 function readInitialState() {
   const isSiswaLoggedIn = localStorage.getItem(STORAGE_KEYS.siswa) === 'true';
   const isGuruLoggedIn = localStorage.getItem(STORAGE_KEYS.guru) === 'true';
   const isKepsekLoggedIn = localStorage.getItem(STORAGE_KEYS.kepsek) === 'true';
+  const isAdminLoggedIn = localStorage.getItem(STORAGE_KEYS.admin) === 'true';
+
+  let guru = null;
+  if (isGuruLoggedIn) {
+    try {
+      guru = JSON.parse(localStorage.getItem('guruBKData') || 'null');
+    } catch {
+      guru = { username: localStorage.getItem('guruBKUsername') };
+    }
+  }
 
   return {
     siswa: isSiswaLoggedIn
@@ -24,15 +34,19 @@ function readInitialState() {
           foto_profile: localStorage.getItem('currentUserFoto') || null,
         }
       : null,
-    guru: isGuruLoggedIn
-      ? { username: localStorage.getItem('guruBKUsername') }
-      : null,
+    guru,
     kepsek: isKepsekLoggedIn
       ? {
           username: localStorage.getItem('kepsekUsername'),
           nama: localStorage.getItem('kepsekNama'),
           nip: localStorage.getItem('kepsekNip'),
           sekolah: localStorage.getItem('kepsekSekolah'),
+        }
+      : null,
+    admin: isAdminLoggedIn
+      ? {
+          username: localStorage.getItem('adminUsername'),
+          nama: localStorage.getItem('adminNama'),
         }
       : null,
   };
@@ -42,6 +56,7 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(readInitialState);
 
   const loginAsSiswa = useCallback((siswa) => {
+    activateRoleToken('siswa');
     localStorage.setItem(STORAGE_KEYS.siswa, 'true');
     localStorage.setItem('currentUser', siswa.nis);
     localStorage.setItem('currentUserNama', siswa.nama);
@@ -51,7 +66,6 @@ export function AuthProvider({ children }) {
     } else {
       localStorage.removeItem('currentUserFoto');
     }
-    // Data per-user disimpan juga agar bisa diakses halaman guru-bk, sesuai perilaku lama.
     localStorage.setItem(
       `userData_${siswa.nis}`,
       JSON.stringify({ nis: siswa.nis, nama: siswa.nama, kelas: siswa.kelas })
@@ -59,8 +73,6 @@ export function AuthProvider({ children }) {
     setSession((prev) => ({ ...prev, siswa }));
   }, []);
 
-  // Dipanggil setelah upload/hapus foto profil, supaya Navbar & halaman lain
-  // langsung ikut update tanpa perlu logout-login ulang.
   const updateSiswaFoto = useCallback((fotoPath) => {
     if (fotoPath) {
       localStorage.setItem('currentUserFoto', fotoPath);
@@ -74,21 +86,35 @@ export function AuthProvider({ children }) {
   }, []);
 
   const loginAsGuru = useCallback((guru) => {
+    activateRoleToken('guru');
     localStorage.setItem(STORAGE_KEYS.guru, 'true');
     localStorage.setItem('guruBKUsername', guru.username);
+    // Simpan profil lengkap — dipakai filter konseling by nama (guru_bk)
+    localStorage.setItem('guruBKData', JSON.stringify(guru));
     setSession((prev) => ({ ...prev, guru }));
   }, []);
 
   const loginAsKepsek = useCallback((kepsek) => {
+    activateRoleToken('kepsek');
     localStorage.setItem(STORAGE_KEYS.kepsek, 'true');
     localStorage.setItem('kepsekUsername', kepsek.username);
     localStorage.setItem('kepsekNama', kepsek.nama);
-    localStorage.setItem('kepsekNip', kepsek.nip);
-    localStorage.setItem('kepsekSekolah', kepsek.sekolah);
+    localStorage.setItem('kepsekNip', kepsek.nip || '');
+    localStorage.setItem('kepsekSekolah', kepsek.sekolah || '');
     setSession((prev) => ({ ...prev, kepsek }));
   }, []);
 
+  const loginAsAdmin = useCallback((admin) => {
+    activateRoleToken('admin');
+    localStorage.setItem(STORAGE_KEYS.admin, 'true');
+    localStorage.setItem('adminUsername', admin.username);
+    localStorage.setItem('adminNama', admin.nama || 'Admin');
+    setSession((prev) => ({ ...prev, admin }));
+  }, []);
+
   const logout = useCallback((role) => {
+    if (role) clearToken(role);
+    else clearToken();
     if (role === 'siswa') {
       localStorage.removeItem(STORAGE_KEYS.siswa);
       localStorage.removeItem('currentUser');
@@ -98,12 +124,17 @@ export function AuthProvider({ children }) {
     } else if (role === 'guru') {
       localStorage.removeItem(STORAGE_KEYS.guru);
       localStorage.removeItem('guruBKUsername');
+      localStorage.removeItem('guruBKData');
     } else if (role === 'kepsek') {
       localStorage.removeItem(STORAGE_KEYS.kepsek);
       localStorage.removeItem('kepsekUsername');
       localStorage.removeItem('kepsekNama');
       localStorage.removeItem('kepsekNip');
       localStorage.removeItem('kepsekSekolah');
+    } else if (role === 'admin') {
+      localStorage.removeItem(STORAGE_KEYS.admin);
+      localStorage.removeItem('adminUsername');
+      localStorage.removeItem('adminNama');
     } else {
       localStorage.clear();
     }
@@ -114,9 +145,11 @@ export function AuthProvider({ children }) {
     siswa: session.siswa,
     guru: session.guru,
     kepsek: session.kepsek,
+    admin: session.admin,
     loginAsSiswa,
     loginAsGuru,
     loginAsKepsek,
+    loginAsAdmin,
     updateSiswaFoto,
     logout,
   };

@@ -113,10 +113,6 @@ export default function LoginSiswa() {
         </button>
       </form>
 
-      <Link to="/registrasi" className="auth-link">
-        Belum punya akun? Daftar
-      </Link>
-
       <div>
         <Link to="/login-guru" className="auth-guru-link">
           📚 Login sebagai Guru BK
@@ -128,6 +124,9 @@ export default function LoginSiswa() {
       </div>
       <Link to="/login-kepsek" className="auth-kepsek-link">
         🏫 Login sebagai Kepala Sekolah
+      </Link>
+      <Link to="/login-admin" className="auth-kepsek-link" style={{ marginTop: 8, display: 'inline-block' }}>
+        ⚙️ Login Admin
       </Link>
     </AuthLayout>
   );

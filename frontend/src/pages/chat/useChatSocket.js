@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { io } from 'socket.io-client';
+import { getToken } from '../../api/tokenStore';
 
 const SOCKET_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
@@ -37,6 +38,7 @@ export default function useChatSocket({ sessionId, currentUser }) {
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       timeout: 20000,
+      auth: { token: getToken() },
     });
     socketRef.current = socket;
 

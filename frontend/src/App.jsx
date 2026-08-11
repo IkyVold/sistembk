@@ -5,7 +5,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import LoginSiswa from './pages/auth/LoginSiswa';
 import LoginGuru from './pages/auth/LoginGuru';
 import LoginKepsek from './pages/auth/LoginKepsek';
-import Registrasi from './pages/auth/Registrasi';
+import LoginAdmin from './pages/auth/LoginAdmin';
+import AdminDashboard from './pages/admin/AdminDashboard';
 import PilihGuru from './pages/PilihGuru';
 import Beranda from './pages/siswa/Beranda';
 import Jadwal from './pages/siswa/Jadwal';
@@ -27,7 +28,8 @@ export default function App() {
         <Route path="/login" element={<LoginSiswa />} />
         <Route path="/login-guru" element={<LoginGuru />} />
         <Route path="/login-kepsek" element={<LoginKepsek />} />
-        <Route path="/registrasi" element={<Registrasi />} />
+        <Route path="/login-admin" element={<LoginAdmin />} />
+        <Route path="/dashboard-admin" element={<AdminDashboard />} />
 
         {/* Area siswa (butuh login siswa) */}
         <Route
@@ -98,6 +100,15 @@ export default function App() {
         />
         <Route
           path="/guru-bk"
+          element={
+            <ProtectedRoute role="guru" redirectTo="/login-guru">
+              <GuruBkDashboard />
+            </ProtectedRoute>
+          }
+        />
+        {/* Alias lama — login sebelumnya sempat mengarah ke /dashboard-guru */}
+        <Route
+          path="/dashboard-guru"
           element={
             <ProtectedRoute role="guru" redirectTo="/login-guru">
               <GuruBkDashboard />

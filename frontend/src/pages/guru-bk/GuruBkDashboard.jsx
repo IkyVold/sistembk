@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { GURU_BK_LIST } from '../../data/guruBkList';
+import { activateRoleToken, getTokenForRole } from '../../api/tokenStore';
+import { uploadFotoGuruBk, deleteFotoGuruBk } from '../../api/akunService';
+import { mediaUrl } from '../../utils/mediaUrl';
 import Sidebar from './components/Sidebar';
 import KonselingTab from './KonselingTab';
 import SiswaTab from './SiswaTab';
@@ -31,10 +33,26 @@ export default function GuruBkDashboard() {
   const navigate = useNavigate();
   const auth = useAuth();
 
-  const currentGuru = useMemo(
-    () => GURU_BK_LIST.find((g) => g.username === auth.guru?.username),
-    [auth.guru]
-  );
+    // Profil guru dari session login (backend) — nama dipakai filter konseling
+  const currentGuru = useMemo(() => {
+    if (!auth.guru) return null;
+    const g = auth.guru;
+    return {
+      ...g,
+      avatar: g.avatar || (g.nama ? g.nama.split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase() : 'GB'),
+    };
+  }, [auth.guru]);
+
+  // Pastikan token JWT role guru aktif (hindari 403 karena token siswa masih aktif)
+  useEffect(() => {
+    const t = activateRoleToken('guru');
+    if (!t && auth.guru) {
+      // Session UI ada tapi token guru tidak ada → wajib login ulang
+      console.warn('Token guru tidak ditemukan — silakan login ulang');
+      auth.logout('guru');
+      navigate('/login-guru');
+    }
+  }, [auth.guru, navigate]);
 
   // ==================== KONSELING STATE ====================
   const [semuaKonseling, setSemuaKonseling] = useState([]);
@@ -422,6 +440,37 @@ export default function GuruBkDashboard() {
     }
   }
 
+  async function handleFotoChange(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !currentGuru?.username) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Ukuran foto maksimal 2MB');
+      return;
+    }
+    const res = await uploadFotoGuruBk(currentGuru.username, file);
+    if (res.success) {
+      const updated = { ...currentGuru, foto_profile: res.foto_profile };
+      auth.loginAsGuru(updated);
+      alert(res.message || 'Foto profil berhasil diubah');
+    } else {
+      alert(res.error || 'Gagal mengunggah foto');
+    }
+  }
+
+  async function handleHapusFoto() {
+    if (!currentGuru?.username) return;
+    if (!confirm('Hapus foto profil?')) return;
+    const res = await deleteFotoGuruBk(currentGuru.username);
+    if (res.success) {
+      const updated = { ...currentGuru, foto_profile: null };
+      auth.loginAsGuru(updated);
+      alert(res.message || 'Foto profil dihapus');
+    } else {
+      alert(res.error || 'Gagal menghapus foto');
+    }
+  }
+
   if (!currentGuru) return null;
 
   const tabTitles = {
@@ -441,10 +490,24 @@ export default function GuruBkDashboard() {
           </div>
         </div>
         <div className="user-info">
-          <div className="user-avatar">{currentGuru.avatar}</div>
+          <label className="user-avatar user-avatar-editable" title="Klik untuk ganti foto profil" style={{ cursor: 'pointer', overflow: 'hidden' }}>
+            {currentGuru.foto_profile ? (
+              <img src={mediaUrl(currentGuru.foto_profile)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              currentGuru.avatar
+            )}
+            <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} onChange={handleFotoChange} />
+          </label>
           <div>
             <div style={{ fontWeight: 700, fontSize: '14px' }}>{currentGuru.nama}</div>
-            <div style={{ fontSize: '11.5px', opacity: 0.85 }}>Konselor Sekolah</div>
+            <div style={{ fontSize: '11.5px', opacity: 0.85 }}>
+              Konselor Sekolah
+              {currentGuru.foto_profile ? (
+                <> · <button type="button" onClick={handleHapusFoto} style={{ background: 'none', border: 'none', color: 'inherit', textDecoration: 'underline', cursor: 'pointer', padding: 0, fontSize: '11.5px', opacity: 0.9 }}>Hapus foto</button></>
+              ) : (
+                <> · <span style={{ opacity: 0.8 }}>Klik avatar untuk foto</span></>
+              )}
+            </div>
           </div>
           <button className="logout-btn" onClick={handleLogout}>
             <span>🚪</span> Logout

@@ -1,6 +1,8 @@
 import axiosClient, { extractErrorMessage } from '../../../api/axiosClient';
+import { activateRoleToken } from '../../../api/tokenStore';
 
 export async function fetchKonselingByGuru(guruNama) {
+  activateRoleToken('guru');
   const { data } = await axiosClient.get('/api/konseling-bk', {
     params: { guru: guruNama },
   });
@@ -8,11 +10,13 @@ export async function fetchKonselingByGuru(guruNama) {
 }
 
 export async function lookupSiswaByNis(nis) {
+  activateRoleToken('guru');
   const { data } = await axiosClient.get(`/api/profile/${nis}`);
   return data;
 }
 
 export async function validasiJadwalKonseling(id, { tanggal, jam }) {
+  activateRoleToken('guru');
   try {
     const { data } = await axiosClient.put(`/api/konseling/${id}/validasi`, { tanggal, jam });
     if (!data.success) throw new Error(data.error || 'Gagal memvalidasi jadwal');
@@ -23,6 +27,7 @@ export async function validasiJadwalKonseling(id, { tanggal, jam }) {
 }
 
 export async function ubahStatusKonseling(id, status) {
+  activateRoleToken('guru');
   try {
     const { data } = await axiosClient.put(`/api/konseling/${id}/status`, { status });
     if (!data.success) throw new Error(data.error || 'Gagal mengubah status');
@@ -33,6 +38,7 @@ export async function ubahStatusKonseling(id, status) {
 }
 
 export async function simpanLaporanKonseling(id, payload) {
+  activateRoleToken('guru');
   try {
     const { data } = await axiosClient.put(`/api/konseling/${id}/laporan`, payload);
     if (!data.success) throw new Error(data.error || 'Gagal menyimpan laporan');
@@ -43,6 +49,7 @@ export async function simpanLaporanKonseling(id, payload) {
 }
 
 export async function simpanWalkinKonseling(payload) {
+  activateRoleToken('guru');
   try {
     const { data } = await axiosClient.post('/api/konseling/walkin', payload);
     if (!data.success) throw new Error(data.error || 'Gagal menyimpan data');

@@ -10,6 +10,7 @@ export default function LoginKepsek() {
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (kepsek) {
@@ -18,9 +19,11 @@ export default function LoginKepsek() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    const result = loginKepsek(username, password);
+    setIsSubmitting(true);
+    const result = await loginKepsek(username, password);
+    setIsSubmitting(false);
 
     if (result.success) {
       loginAsKepsek(result.kepsek);
@@ -66,27 +69,10 @@ export default function LoginKepsek() {
           />
         </div>
 
-        <button type="submit" className="auth-btn">
-          Login sebagai Kepala Sekolah
+        <button type="submit" className="auth-btn" disabled={isSubmitting}>
+          {isSubmitting ? 'Memproses...' : 'Login sebagai Kepala Sekolah'}
         </button>
       </form>
-
-      <div className="auth-info-box">
-        <h4>📋 Akun Demo Kepala Sekolah:</h4>
-        <p>
-          👨‍💼 <strong>Drs. H. Ahmad Fauzi, M.Pd</strong>
-          <br />
-          Username: <code>kepsek_sma</code> Password: <code>kepsek123</code>
-        </p>
-        <p>
-          👩‍💼 <strong>Dra. Siti Aminah, M.M</strong>
-          <br />
-          Username: <code>kepsek_smk</code> Password: <code>kepsek123</code>
-        </p>
-        <p style={{ marginTop: '10px', fontSize: '12px', color: '#1e3c72' }}>
-          📊 Akses: Melihat laporan konseling, statistik, dan evaluasi layanan BK
-        </p>
-      </div>
 
       <Link to="/login" className="auth-link">
         ← Kembali ke Login Siswa

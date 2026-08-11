@@ -10,6 +10,7 @@ export default function LoginGuru() {
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (guru) {
@@ -18,9 +19,11 @@ export default function LoginGuru() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    const result = loginGuruBk(username, password);
+    setIsSubmitting(true);
+    const result = await loginGuruBk(username, password);
+    setIsSubmitting(false);
 
     if (result.success) {
       loginAsGuru(result.guru);
@@ -38,7 +41,7 @@ export default function LoginGuru() {
       </div>
 
       <h1 className="auth-title">Login Guru BK</h1>
-      <p className="auth-subtitle">Masuk ke dashboard konseling</p>
+      <p className="auth-subtitle">Kelola pengajuan konseling dan laporan siswa</p>
 
       <form className="auth-form" onSubmit={handleSubmit}>
         <div className="auth-field">
@@ -65,42 +68,13 @@ export default function LoginGuru() {
           />
         </div>
 
-        <button type="submit" className="auth-btn">
-          Login sebagai Guru BK
+        <button type="submit" className="auth-btn" disabled={isSubmitting}>
+          {isSubmitting ? 'Memproses...' : 'Login sebagai Guru BK'}
         </button>
       </form>
 
-      <div className="auth-info-box">
-        <h4>📋 Akun Demo Guru BK:</h4>
-        <p>
-          👨‍🏫 <strong>Joko Ardianto S.Pd</strong>
-          <br />
-          Username: <code>joko_bk</code> Password: <code>guru123</code>
-        </p>
-        <p>
-          👩‍🏫 <strong>wiwiek Hariati S.Pd</strong>
-          <br />
-          Username: <code>wiwiek_bk</code> Password: <code>guru123</code>
-        </p>
-        <p>
-          👨‍🏫 <strong>Dicky Ardiansyah S.Pd</strong>
-          <br />
-          Username: <code>dicky_bk</code> Password: <code>guru123</code>
-        </p>
-        <p style={{ marginTop: '10px', fontSize: '12px' }}>
-          ⚠️ Setiap guru hanya melihat laporan dari siswanya sendiri
-        </p>
-      </div>
-
       <Link to="/login" className="auth-link">
-        ← Login sebagai Siswa
-      </Link>
-
-      <div className="auth-role-divider">
-        <span>AKSES MANAJEMEN</span>
-      </div>
-      <Link to="/login-kepsek" className="auth-kepsek-link">
-        🏫 Login sebagai Kepala Sekolah
+        ← Kembali ke Login Siswa
       </Link>
     </AuthLayout>
   );

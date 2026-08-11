@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { activateRoleToken } from '../api/tokenStore';
 
 /**
  * Bungkus halaman yang butuh login sesuai role tertentu.
@@ -13,6 +14,9 @@ export default function ProtectedRoute({ role, redirectTo, children }) {
   if (!isLoggedIn) {
     return <Navigate to={redirectTo} replace />;
   }
+
+  // Aktifkan JWT sesuai role halaman ini (cegah 403 salah role)
+  activateRoleToken(role);
 
   return children;
 }

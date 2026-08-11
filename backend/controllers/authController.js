@@ -1,19 +1,17 @@
 // controllers/authController.js
 const authService = require('../services/authService');
+const { signToken } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errorHandler');
-
-const register = asyncHandler(async (req, res) => {
-  const { siswaId } = await authService.registerSiswa(req.body);
-  res.json({
-    success: true,
-    message: 'Registrasi berhasil',
-    siswaId,
-  });
-});
 
 const login = asyncHandler(async (req, res) => {
   const siswa = await authService.loginSiswa(req.body);
-  res.json({ success: true, siswa });
+  const token = signToken({
+    role: 'siswa',
+    id: siswa.id,
+    nis: siswa.nis,
+    nama: siswa.nama,
+  });
+  res.json({ success: true, token, siswa });
 });
 
-module.exports = { register, login };
+module.exports = { login };

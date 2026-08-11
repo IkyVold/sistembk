@@ -1,11 +1,14 @@
 import axiosClient, { extractErrorMessage } from '../../../api/axiosClient';
+import { activateRoleToken } from '../../../api/tokenStore';
 
 export async function fetchAllInformasi() {
+  activateRoleToken('guru');
   const { data } = await axiosClient.get('/api/informasi');
   return data;
 }
 
 export async function simpanInformasi({ id, judul, kategori, isi, guruBk }) {
+  activateRoleToken('guru');
   try {
     let data;
     if (id) {
@@ -21,6 +24,7 @@ export async function simpanInformasi({ id, judul, kategori, isi, guruBk }) {
 }
 
 export async function hapusInformasi(id) {
+  activateRoleToken('guru');
   try {
     const { data } = await axiosClient.delete(`/api/informasi/${id}`);
     if (!data.success) throw new Error(data.error || 'Gagal menghapus informasi');
