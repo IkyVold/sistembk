@@ -15,7 +15,7 @@ socket/  →  services/chatService  →  models/chatModel
 |-------|----------------|
 | **routes/** | Definisi endpoint + middleware (multer, dsb.) |
 | **controllers/** | req/res + `asyncHandler` |
-| **services/** | Validasi & logika bisnis |
+| **services/** | Konfirmasi & logika bisnis |
 | **models/** | Pure query SQL (satu-satunya yang pakai `pool`) |
 | **socket/** | Handler Socket.IO (event name & payload sama) |
 | **utils/** | `HttpError`, `sanitize` |
@@ -54,7 +54,7 @@ Token didapat dari response login (`token` field).
 
 Role:
 - `siswa` — data sendiri, ajukan konseling, chat AI, notifikasi
-- `guru` — daftar siswa, validasi, laporan, foto profil guru
+- `guru` — daftar siswa, konfirmasi, laporan, foto profil guru
 - `kepsek` — monitoring semua konseling
 - `admin` — CRUD akun guru/kepsek
 

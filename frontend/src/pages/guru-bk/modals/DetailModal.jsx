@@ -3,31 +3,31 @@ import Modal from './Modal';
 import Avatar from '../../../components/Avatar';
 import { JAM_LIST, LAPORAN_EDIT_WINDOW_HOURS } from '../constants';
 
-export default function DetailModal({ item, onClose, onValidasi, onBatal, onLaporan, onEditLaporan }) {
-  const [tanggalValidasi, setTanggalValidasi] = useState('');
-  const [jamValidasi, setJamValidasi] = useState('');
+export default function DetailModal({ item, onClose, onKonfirmasi, onBatal, onLaporan, onEditLaporan }) {
+  const [tanggalKonfirmasi, setTanggalKonfirmasi] = useState('');
+  const [jamKonfirmasi, setJamKonfirmasi] = useState('');
 
   useEffect(() => {
     if (item) {
-      setTanggalValidasi(item.tanggalRaw || '');
-      setJamValidasi(item.jam || '');
+      setTanggalKonfirmasi(item.tanggalRaw || '');
+      setJamKonfirmasi(item.jam || '');
     }
   }, [item]);
 
   if (!item) return null;
 
   const userNama = item.namaSiswa || item.nisnSiswa;
-  const statusValidasiClass = item.statusValidasi === 'Tervalidasi' ? 'status-selesai' : 'status-proses';
-  const belumValidasi = item.statusValidasi !== 'Tervalidasi' && item.status === 'Proses';
-  const sudahValidasiBelumSelesai = item.statusValidasi === 'Tervalidasi' && item.status === 'Proses';
+  const statusKonfirmasiClass = item.statusKonfirmasi === 'Terkonfirmasi' ? 'status-selesai' : 'status-proses';
+  const belumKonfirmasi = item.statusKonfirmasi !== 'Terkonfirmasi' && item.status === 'Proses';
+  const sudahKonfirmasiBelumSelesai = item.statusKonfirmasi === 'Terkonfirmasi' && item.status === 'Proses';
   const laporan = item.laporanGuru;
 
   let footer;
-  if (belumValidasi) {
+  if (belumKonfirmasi) {
     footer = (
       <>
-        <button className="btn btn-validasi" onClick={() => onValidasi(item, { tanggal: tanggalValidasi, jam: jamValidasi })}>
-          <span>✅</span> Validasi Jadwal
+        <button className="btn btn-konfirmasi" onClick={() => onKonfirmasi(item, { tanggal: tanggalKonfirmasi, jam: jamKonfirmasi })}>
+          <span>✅</span> Konfirmasi Jadwal
         </button>
         <button className="btn btn-batal" onClick={() => onBatal(item)}>
           <span>❌</span> Batalkan
@@ -37,10 +37,10 @@ export default function DetailModal({ item, onClose, onValidasi, onBatal, onLapo
         </button>
       </>
     );
-  } else if (sudahValidasiBelumSelesai) {
+  } else if (sudahKonfirmasiBelumSelesai) {
     footer = (
       <>
-        <button className="btn btn-validasi" onClick={() => onValidasi(item, { tanggal: tanggalValidasi, jam: jamValidasi })}>
+        <button className="btn btn-konfirmasi" onClick={() => onKonfirmasi(item, { tanggal: tanggalKonfirmasi, jam: jamKonfirmasi })}>
           <span>🔄</span> Ubah Jadwal
         </button>
         <button className="btn btn-laporan" onClick={() => onLaporan(item.id)}>
@@ -83,12 +83,12 @@ export default function DetailModal({ item, onClose, onValidasi, onBatal, onLapo
     );
   }
 
-  let laporanStatusClass = 'status-tervalidasi';
+  let laporanStatusClass = 'status-terkonfirmasi';
   if (laporan?.statusPenanganan?.includes('Selesai')) laporanStatusClass = 'status-selesai';
   else if (laporan?.statusPenanganan?.includes('Monitoring')) laporanStatusClass = 'status-proses';
 
   return (
-    <Modal show={Boolean(item)} onClose={onClose} title="📋 Detail Konseling & Validasi Jadwal" footer={footer}>
+    <Modal show={Boolean(item)} onClose={onClose} title="📋 Detail Konseling & Konfirmasi Jadwal" footer={footer}>
       <div
         style={{
           marginBottom: '25px',
@@ -149,7 +149,7 @@ export default function DetailModal({ item, onClose, onValidasi, onBatal, onLapo
       </div>
 
       <div className="detail-row">
-        <div className="detail-label">Validasi Jadwal:</div>
+        <div className="detail-label">Konfirmasi Jadwal:</div>
         <div className="detail-value">
           <div
             style={{
@@ -162,16 +162,16 @@ export default function DetailModal({ item, onClose, onValidasi, onBatal, onLapo
             }}
           >
             <div>
-              <div style={{ color: 'var(--gray-600)', fontSize: '12px' }}>Tanggal Validasi</div>
-              <div style={{ fontWeight: 600, color: 'var(--gray-800)' }}>{item.tanggalValidasi || '-'}</div>
+              <div style={{ color: 'var(--gray-600)', fontSize: '12px' }}>Tanggal Konfirmasi</div>
+              <div style={{ fontWeight: 600, color: 'var(--gray-800)' }}>{item.tanggalKonfirmasi || '-'}</div>
             </div>
             <div>
-              <div style={{ color: 'var(--gray-600)', fontSize: '12px' }}>Jam Validasi</div>
-              <div style={{ fontWeight: 600, color: 'var(--gray-800)' }}>{item.jamValidasi || '-'}</div>
+              <div style={{ color: 'var(--gray-600)', fontSize: '12px' }}>Jam Konfirmasi</div>
+              <div style={{ fontWeight: 600, color: 'var(--gray-800)' }}>{item.jamKonfirmasi || '-'}</div>
             </div>
             <div>
-              <div style={{ color: 'var(--gray-600)', fontSize: '12px' }}>Status Validasi</div>
-              <div><span className={`status-badge ${statusValidasiClass}`}>{item.statusValidasi || 'Belum Divalidasi'}</span></div>
+              <div style={{ color: 'var(--gray-600)', fontSize: '12px' }}>Status Konfirmasi</div>
+              <div><span className={`status-badge ${statusKonfirmasiClass}`}>{item.statusKonfirmasi || 'Belum Dikonfirmasi'}</span></div>
             </div>
             <div>
               <div style={{ color: 'var(--gray-600)', fontSize: '12px' }}>Status Konseling</div>
@@ -241,7 +241,7 @@ export default function DetailModal({ item, onClose, onValidasi, onBatal, onLapo
         </div>
       )}
 
-      {(belumValidasi || sudahValidasiBelumSelesai) && (
+      {(belumKonfirmasi || sudahKonfirmasiBelumSelesai) && (
         <div className="validation-section">
           <div className="validation-title">
             <span
@@ -256,23 +256,23 @@ export default function DetailModal({ item, onClose, onValidasi, onBatal, onLapo
                 borderRadius: '8px',
               }}
             >
-              {sudahValidasiBelumSelesai ? '🔄' : '✅'}
+              {sudahKonfirmasiBelumSelesai ? '🔄' : '✅'}
             </span>
-            {sudahValidasiBelumSelesai ? 'Ubah Jadwal Konseling' : 'Validasi Jadwal Konseling'}
+            {sudahKonfirmasiBelumSelesai ? 'Ubah Jadwal Konseling' : 'Konfirmasi Jadwal Konseling'}
           </div>
           <div className="validation-field">
-            <label htmlFor="validasiTanggal">📅 Tanggal Konseling:</label>
+            <label htmlFor="konfirmasiTanggal">📅 Tanggal Konseling:</label>
             <input
               type="date"
-              id="validasiTanggal"
-              value={tanggalValidasi}
+              id="konfirmasiTanggal"
+              value={tanggalKonfirmasi}
               min={new Date().toISOString().split('T')[0]}
-              onChange={(e) => setTanggalValidasi(e.target.value)}
+              onChange={(e) => setTanggalKonfirmasi(e.target.value)}
             />
           </div>
           <div className="validation-field">
-            <label htmlFor="validasiJam">⏰ Jam Konseling:</label>
-            <select id="validasiJam" value={jamValidasi} onChange={(e) => setJamValidasi(e.target.value)}>
+            <label htmlFor="konfirmasiJam">⏰ Jam Konseling:</label>
+            <select id="konfirmasiJam" value={jamKonfirmasi} onChange={(e) => setJamKonfirmasi(e.target.value)}>
               <option value="">Pilih jam konseling</option>
               {JAM_LIST.map((jam) => (
                 <option value={jam} key={jam}>
@@ -297,7 +297,7 @@ export default function DetailModal({ item, onClose, onValidasi, onBatal, onLapo
             <span style={{ fontSize: '20px' }}>⚠️</span>
             <span>
               <strong>Catatan:</strong>{' '}
-              {sudahValidasiBelumSelesai
+              {sudahKonfirmasiBelumSelesai
                 ? 'Jika tanggal/jam di atas diubah lalu disimpan, siswa akan menerima notifikasi perubahan jadwal secara otomatis.'
                 : 'Jika tidak diubah, jadwal akan menggunakan tanggal dan jam yang diajukan siswa. Konfirmasi perubahan akan terlihat di halaman siswa.'}
             </span>

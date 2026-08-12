@@ -15,8 +15,8 @@ const listByGuru = asyncHandler(async (req, res) => {
   res.json(await konselingService.listByGuru(req.query.guru));
 });
 
-const validasi = asyncHandler(async (req, res) => {
-  const result = await konselingService.validasi(req.params.id, req.body);
+const konfirmasi = asyncHandler(async (req, res) => {
+  const result = await konselingService.konfirmasi(req.params.id, req.body);
   res.json({ success: true, message: result.message });
 });
 
@@ -49,6 +49,16 @@ const batalkanOlehSiswa = asyncHandler(async (req, res) => {
   res.json({ success: true, message: result.message, alasan: result.alasan });
 });
 
+const createLanjutan = asyncHandler(async (req, res) => {
+  const result = await konselingService.createLanjutan(req.body, req.user);
+  res.json({
+    success: true,
+    message: result.message,
+    id: result.id,
+    pengajuan_sebelumnya_id: result.pengajuan_sebelumnya_id,
+  });
+});
+
 const listByNis = asyncHandler(async (req, res) => {
   res.json(await konselingService.listByNis(req.params.nis));
 });
@@ -61,12 +71,13 @@ module.exports = {
   create,
   listAll,
   listByGuru,
-  validasi,
+  konfirmasi,
   updateStatus,
   simpanLaporan,
   walkin,
   batalkan,
   batalkanOlehSiswa,
+  createLanjutan,
   listByNis,
   getDetail,
 };

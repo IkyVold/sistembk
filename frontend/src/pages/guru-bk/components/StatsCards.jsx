@@ -1,7 +1,7 @@
 const STAT_DEFS = [
   { key: 'total', className: 'stat-total', icon: '📋', label: 'Total Konseling' },
-  { key: 'proses', className: 'stat-proses', icon: '⏳', label: 'Menunggu Validasi' },
-  { key: 'tervalidasi', className: 'stat-tervalidasi', icon: '✅', label: 'Sudah Divalidasi' },
+  { key: 'proses', className: 'stat-proses', icon: '⏳', label: 'Menunggu Konfirmasi' },
+  { key: 'terkonfirmasi', className: 'stat-terkonfirmasi', icon: '✅', label: 'Sudah Dikonfirmasi' },
   { key: 'selesai', className: 'stat-selesai', icon: '✨', label: 'Selesai' },
   { key: 'dibatalkan', className: 'stat-dibatalkan', icon: '❌', label: 'Dibatalkan' },
 ];

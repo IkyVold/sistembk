@@ -14,7 +14,8 @@ router.get('/konseling-all', authenticate, requireRole('kepsek', 'admin'), konse
 router.get('/konseling-bk', authenticate, requireRole('guru', 'admin'), konselingController.listByGuru);
 router.get('/konseling/detail/:id', authenticate, requireRole('siswa', 'guru', 'kepsek', 'admin'), konselingController.getDetail);
 router.post('/konseling/walkin', authenticate, requireRole('guru', 'admin'), konselingController.walkin);
-router.put('/konseling/:id/validasi', authenticate, requireRole('guru', 'admin'), konselingController.validasi);
+router.post('/konseling/lanjutan', authenticate, requireRole('guru', 'admin'), konselingController.createLanjutan);
+router.put('/konseling/:id/konfirmasi', authenticate, requireRole('guru', 'admin'), konselingController.konfirmasi);
 router.put('/konseling/:id/status', authenticate, requireRole('guru', 'admin'), konselingController.updateStatus);
 router.put('/konseling/:id/laporan', authenticate, requireRole('guru', 'admin'), konselingController.simpanLaporan);
 router.put('/konseling/:id/batal-siswa', authenticate, requireRole('siswa'), konselingController.batalkanOlehSiswa);

@@ -4,7 +4,7 @@ export default function LaporanDetailModal({ item, onClose }) {
   if (!item?.laporanGuru) return null;
   const laporan = item.laporanGuru;
 
-  let statusClass = 'status-tervalidasi';
+  let statusClass = 'status-terkonfirmasi';
   if (laporan.statusPenanganan.includes('Selesai')) statusClass = 'status-selesai';
   else if (laporan.statusPenanganan.includes('Monitoring')) statusClass = 'status-proses';
   else if (laporan.statusPenanganan.includes('Rujuk')) statusClass = 'status-dibatalkan';

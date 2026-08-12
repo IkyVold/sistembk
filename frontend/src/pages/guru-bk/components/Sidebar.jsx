@@ -1,7 +1,7 @@
 const MENU_ITEMS = [
   { key: 'all', icon: '📊', label: 'Semua Konseling', showNotif: 'all' },
-  { key: 'proses', icon: '⏳', label: 'Menunggu Validasi', showNotif: 'proses' },
-  { key: 'tervalidasi', icon: '✅', label: 'Sudah Divalidasi' },
+  { key: 'proses', icon: '⏳', label: 'Menunggu Konfirmasi', showNotif: 'proses' },
+  { key: 'terkonfirmasi', icon: '✅', label: 'Sudah Dikonfirmasi' },
   { key: 'selesai', icon: '✨', label: 'Selesai' },
   { key: 'dibatalkan', icon: '❌', label: 'Dibatalkan' },
 ];

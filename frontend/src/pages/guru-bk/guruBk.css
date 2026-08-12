@@ -351,8 +351,8 @@
             color: var(--amber-700);
         }
 
-        .guru-bk-page .stat-tervalidasi { border-top-color: var(--brand-500); }
-        .guru-bk-page .stat-tervalidasi .stat-icon {
+        .guru-bk-page .stat-terkonfirmasi { border-top-color: var(--brand-500); }
+        .guru-bk-page .stat-terkonfirmasi .stat-icon {
             background: var(--brand-50);
             color: var(--brand-700);
         }
@@ -517,7 +517,7 @@
             color: var(--red-700);
         }
 
-        .guru-bk-page .status-tervalidasi {
+        .guru-bk-page .status-terkonfirmasi {
             background: var(--blue-100);
             color: var(--blue-700);
         }
@@ -581,7 +581,7 @@
             color: var(--blue-700);
         }
 
-        .guru-bk-page .btn-validasi {
+        .guru-bk-page .btn-konfirmasi {
             background: var(--brand-100);
             color: var(--brand-700);
         }

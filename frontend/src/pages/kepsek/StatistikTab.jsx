@@ -71,7 +71,7 @@ export default function StatistikTab({ semuaKonseling }) {
                 <tr><td>Proses</td><td>{stats.proses}</td><td>{pct(stats.proses, stats.total)}%</td></tr>
                 <tr><td>Selesai</td><td>{stats.selesai}</td><td>{pct(stats.selesai, stats.total)}%</td></tr>
                 <tr><td>Dibatalkan</td><td>{stats.dibatalkan}</td><td>{pct(stats.dibatalkan, stats.total)}%</td></tr>
-                <tr><td>Tervalidasi</td><td>{stats.tervalidasi}</td><td>{pct(stats.tervalidasi, stats.total)}%</td></tr>
+                <tr><td>Terkonfirmasi</td><td>{stats.terkonfirmasi}</td><td>{pct(stats.terkonfirmasi, stats.total)}%</td></tr>
               </tbody>
             </table>
           </div>

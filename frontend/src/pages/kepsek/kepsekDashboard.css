@@ -418,7 +418,7 @@
             color: var(--red-600);
         }
 
-        .kepsek-page .status-tervalidasi {
+        .kepsek-page .status-terkonfirmasi {
             background: var(--purple-100);
             color: var(--purple-800);
         }

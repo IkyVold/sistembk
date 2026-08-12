@@ -22,12 +22,12 @@ function formatTime(dateStr) {
   }
 }
 
-// Bangun daftar sesi chat dari riwayat konseling daring yang sudah tervalidasi
+// Bangun daftar sesi chat dari riwayat konseling daring yang sudah terkonfirmasi
 // (satu sesi per guru, sama seperti logika asli di index.html)
 function buildChatSessions(semuaKonseling, currentUserId) {
   const chatSessions = [];
   const validKonseling = semuaKonseling.filter(
-    (item) => item.jenis === 'Daring' && item.status_validasi === 'Tervalidasi' && item.status !== 'Dibatalkan'
+    (item) => item.jenis === 'Daring' && item.status_konfirmasi === 'Terkonfirmasi' && item.status !== 'Dibatalkan'
   );
 
   validKonseling.forEach((konseling) => {
@@ -35,8 +35,8 @@ function buildChatSessions(semuaKonseling, currentUserId) {
     if (!existing) {
       const today = new Date().toISOString().split('T')[0];
       const sessionId = `session_${currentUserId}_${konseling.guru.replace(/\s/g, '_')}_${today}`;
-      let lastMessage = konseling.deskripsi?.substring(0, 50) || 'Konseling telah divalidasi';
-      let lastTime = konseling.tanggal_validasi || konseling.tanggal;
+      let lastMessage = konseling.deskripsi?.substring(0, 50) || 'Konseling telah dikonfirmasi';
+      let lastTime = konseling.tanggal_konfirmasi || konseling.tanggal;
 
       const chatKey = `chat_${sessionId}`;
       const chatHistory = localStorage.getItem(chatKey);

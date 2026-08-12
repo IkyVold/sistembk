@@ -424,21 +424,21 @@
 
         .history-page .badge-nolap .badge-dot { background: var(--warning); }
 
-        .history-page .badge-tervalidasi {
+        .history-page .badge-terkonfirmasi {
             background: rgba(83,74,183,0.12);
             color: var(--accent);
             border: 1px solid rgba(83,74,183,0.25);
         }
 
-        .history-page .badge-tervalidasi .badge-dot { background: var(--accent); }
+        .history-page .badge-terkonfirmasi .badge-dot { background: var(--accent); }
 
-        .history-page .badge-belumvalidasi {
+        .history-page .badge-belumkonfirmasi {
             background: var(--surface-2);
             color: var(--text-secondary);
             border: 1px solid var(--border);
         }
 
-        .history-page .badge-belumvalidasi .badge-dot { background: var(--text-muted); }
+        .history-page .badge-belumkonfirmasi .badge-dot { background: var(--text-muted); }
 
         @keyframes pulse {
             0%, 100% { opacity: 1; }

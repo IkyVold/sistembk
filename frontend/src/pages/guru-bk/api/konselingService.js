@@ -15,14 +15,14 @@ export async function lookupSiswaByNis(nis) {
   return data;
 }
 
-export async function validasiJadwalKonseling(id, { tanggal, jam }) {
+export async function konfirmasiJadwalKonseling(id, { tanggal, jam }) {
   activateRoleToken('guru');
   try {
-    const { data } = await axiosClient.put(`/api/konseling/${id}/validasi`, { tanggal, jam });
-    if (!data.success) throw new Error(data.error || 'Gagal memvalidasi jadwal');
+    const { data } = await axiosClient.put(`/api/konseling/${id}/konfirmasi`, { tanggal, jam });
+    if (!data.success) throw new Error(data.error || 'Gagal memkonfirmasi jadwal');
     return { success: true, data };
   } catch (error) {
-    return { success: false, error: extractErrorMessage(error, 'Gagal memvalidasi jadwal') };
+    return { success: false, error: extractErrorMessage(error, 'Gagal memkonfirmasi jadwal') };
   }
 }
 
@@ -56,5 +56,16 @@ export async function simpanWalkinKonseling(payload) {
     return { success: true, data };
   } catch (error) {
     return { success: false, error: extractErrorMessage(error, 'Gagal menyimpan data walk-in') };
+  }
+}
+
+export async function buatSesiLanjutan(payload) {
+  activateRoleToken('guru');
+  try {
+    const { data } = await axiosClient.post('/api/konseling/lanjutan', payload);
+    if (!data.success) throw new Error(data.error || 'Gagal membuat sesi lanjutan');
+    return { success: true, data };
+  } catch (error) {
+    return { success: false, error: extractErrorMessage(error, 'Gagal membuat sesi lanjutan') };
   }
 }

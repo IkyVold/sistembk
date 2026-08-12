@@ -1,3 +1,10 @@
+function normalizeStatusKonfirmasi(v) {
+  if (!v) return 'Belum Dikonfirmasi';
+  if (v === 'Tervalidasi' || v === 'Terkonfirmasi') return 'Terkonfirmasi';
+  if (v === 'Belum Divalidasi' || v === 'Belum Dikonfirmasi') return 'Belum Dikonfirmasi';
+  return v;
+}
+
 import { KATEGORI_COLORS, GURU_BK_LIST } from './constants';
 
 export function formatTanggal(tanggal) {
@@ -32,9 +39,9 @@ export function mapKonselingRow(row) {
     alamatSiswa: row.alamat || '-',
     tanggal: formatTanggal(row.tanggal),
     jam: row.jam,
-    tanggalValidasi: row.tanggal_validasi ? formatTanggal(row.tanggal_validasi) : formatTanggal(row.tanggal),
-    jamValidasi: row.jam_validasi || row.jam,
-    statusValidasi: row.status_validasi || 'Belum Divalidasi',
+    tanggalKonfirmasi: row.tanggal_konfirmasi ? formatTanggal(row.tanggal_konfirmasi) : formatTanggal(row.tanggal),
+    jamKonfirmasi: row.jam_konfirmasi || row.jam,
+    statusKonfirmasi: normalizeStatusKonfirmasi(row.status_konfirmasi),
     status: row.status || 'Proses',
     jenis: row.jenis,
     kategori: row.kategori,
@@ -63,12 +70,12 @@ export function hitungStatistik(semuaKonseling) {
   const proses = semuaKonseling.filter((item) => item.status === 'Proses').length;
   const selesai = semuaKonseling.filter((item) => item.status === 'Selesai').length;
   const dibatalkan = semuaKonseling.filter((item) => item.status === 'Dibatalkan').length;
-  const tervalidasi = semuaKonseling.filter((item) => item.statusValidasi === 'Tervalidasi').length;
+  const terkonfirmasi = semuaKonseling.filter((item) => item.statusKonfirmasi === 'Terkonfirmasi').length;
 
   const siswaAktif = new Set(semuaKonseling.map((item) => item.username)).size;
   const guruAktif = new Set(semuaKonseling.map((item) => item.guru)).size;
 
-  return { total, ...byKategori, proses, selesai, dibatalkan, tervalidasi, siswaAktif, guruAktif };
+  return { total, ...byKategori, proses, selesai, dibatalkan, terkonfirmasi, siswaAktif, guruAktif };
 }
 
 export function getTopKategori(stats) {

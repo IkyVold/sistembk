@@ -24,7 +24,7 @@ function resolveTokenForRequest(config) {
     !isSiswaBatalEndpoint &&
     (url.includes('/konseling-bk') ||
       url.includes('/konseling/walkin') ||
-      url.includes('/validasi') ||
+      url.includes('/konfirmasi') ||
       url.includes('/notifikasi-guru') ||
       url.includes('/siswa/import') ||
       url.includes('/api/siswa') ||

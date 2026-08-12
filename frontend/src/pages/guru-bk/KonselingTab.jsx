@@ -4,8 +4,8 @@ import KelasSelect from './components/KelasSelect';
 
 const FILTER_TITLES = {
   all: '📋 Semua Konseling',
-  proses: '⏳ Menunggu Validasi',
-  tervalidasi: '✅ Sudah Divalidasi',
+  proses: '⏳ Menunggu Konfirmasi',
+  terkonfirmasi: '✅ Sudah Dikonfirmasi',
   selesai: '✨ Selesai',
   dibatalkan: '❌ Dibatalkan',
 };
@@ -13,7 +13,7 @@ const FILTER_TITLES = {
 const EMPTY_MESSAGES = {
   all: (guru) => `Belum ada permintaan konseling dari siswa untuk ${guru}`,
   proses: (guru) => `Belum ada permintaan konseling dari siswa untuk ${guru}`,
-  tervalidasi: (guru) => `Belum ada permintaan konseling dari siswa untuk ${guru}`,
+  terkonfirmasi: (guru) => `Belum ada permintaan konseling dari siswa untuk ${guru}`,
   selesai: (guru) => `Belum ada permintaan konseling dari siswa untuk ${guru}`,
   dibatalkan: (guru) => `Belum ada permintaan konseling dari siswa untuk ${guru}`,
 };
@@ -33,7 +33,7 @@ export default function KonselingTab({
   onWalkin,
   onCetak,
   onDetail,
-  onValidasi,
+  onKonfirmasi,
   onLaporan,
   onBatal,
   onChat,
@@ -95,7 +95,7 @@ export default function KonselingTab({
             data={filteredData}
             emptyMessage={(EMPTY_MESSAGES[currentFilter] || EMPTY_MESSAGES.all)(guruNama)}
             onDetail={onDetail}
-            onValidasi={onValidasi}
+            onKonfirmasi={onKonfirmasi}
             onLaporan={onLaporan}
             onBatal={onBatal}
             onChat={onChat}

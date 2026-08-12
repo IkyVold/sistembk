@@ -1,7 +1,13 @@
 import { useState, useEffect } from 'react';
 import Modal from './Modal';
-import { STATUS_PENANGANAN_OPTIONS } from '../constants';
+import { STATUS_PENANGANAN_OPTIONS, JAM_LIST } from '../constants';
 import { sisaWaktuEditText } from '../helpers';
+
+function defaultLanjutanTanggal() {
+  const d = new Date();
+  d.setDate(d.getDate() + 7);
+  return d.toISOString().slice(0, 10);
+}
 
 export default function LaporanModal({ item, onClose, onSave }) {
   const isEdit = Boolean(item?.laporanGuru);
@@ -10,6 +16,10 @@ export default function LaporanModal({ item, onClose, onSave }) {
   const [rekomendasi, setRekomendasi] = useState('');
   const [statusPenanganan, setStatusPenanganan] = useState('Selesai - Masalah Teratasi');
   const [catatanTambahan, setCatatanTambahan] = useState('');
+  const [buatLanjutan, setBuatLanjutan] = useState(false);
+  const [lanjutanTanggal, setLanjutanTanggal] = useState(defaultLanjutanTanggal());
+  const [lanjutanJam, setLanjutanJam] = useState('09:00');
+  const [lanjutanJenis, setLanjutanJenis] = useState('Luring');
 
   useEffect(() => {
     if (!item) return;
@@ -28,9 +38,21 @@ export default function LaporanModal({ item, onClose, onSave }) {
       setStatusPenanganan('Selesai - Masalah Teratasi');
       setCatatanTambahan('');
     }
+    setBuatLanjutan(false);
+    setLanjutanTanggal(defaultLanjutanTanggal());
+    setLanjutanJam('09:00');
+    setLanjutanJenis(item.jenis === 'Daring' ? 'Daring' : 'Luring');
   }, [item]);
 
+  useEffect(() => {
+    if (statusPenanganan === 'Monitoring' && !isEdit) {
+      setBuatLanjutan(true);
+    }
+  }, [statusPenanganan, isEdit]);
+
   if (!item) return null;
+
+  const showLanjutanOption = statusPenanganan === 'Monitoring' && !isEdit;
 
   function handleSave() {
     if (!kesimpulan.trim()) {
@@ -41,11 +63,34 @@ export default function LaporanModal({ item, onClose, onSave }) {
       alert('Rekomendasi / tindak lanjut harus diisi!');
       return;
     }
+    if (buatLanjutan && showLanjutanOption) {
+      if (!lanjutanTanggal || !lanjutanJam) {
+        alert('Tanggal dan jam sesi lanjutan wajib diisi!');
+        return;
+      }
+      const today = new Date().toISOString().slice(0, 10);
+      if (lanjutanTanggal < today) {
+        alert('Tanggal sesi lanjutan tidak boleh di masa lalu!');
+        return;
+      }
+    }
+
     onSave(item.id, {
       kesimpulan: kesimpulan.trim(),
       rekomendasi: rekomendasi.trim(),
       statusPenanganan,
       catatanTambahan: catatanTambahan.trim(),
+      buatLanjutan: Boolean(buatLanjutan && showLanjutanOption),
+      lanjutan:
+        buatLanjutan && showLanjutanOption
+          ? {
+              tanggal: lanjutanTanggal,
+              jam: lanjutanJam,
+              jenis: lanjutanJenis,
+              kategori: item.kategori,
+              deskripsi: `Sesi lanjutan dari konseling #${item.id}. ${rekomendasi.trim()}`.slice(0, 500),
+            }
+          : null,
     });
   }
 
@@ -55,7 +100,9 @@ export default function LaporanModal({ item, onClose, onSave }) {
         Batal
       </button>
       <button className="btn btn-selesai" onClick={handleSave}>
-        Simpan Laporan &amp; Selesaikan
+        {buatLanjutan && showLanjutanOption
+          ? 'Simpan Laporan + Buat Sesi Lanjutan'
+          : 'Simpan Laporan & Selesaikan'}
       </button>
     </>
   );
@@ -79,13 +126,13 @@ export default function LaporanModal({ item, onClose, onSave }) {
             color: 'var(--amber-700)',
           }}
         >
-          ⏳ {sisaWaktuEditText(item.laporanCreatedAt)}. Setelah lewat, laporan ini terkunci permanen.
+          Mode edit — {sisaWaktuEditText(item.laporanCreatedAt)}
         </div>
       )}
 
-      <div className="validation-section">
+      <div className="validation-form">
         <div className="validation-title">
-          <span>📋</span> Informasi Konseling
+          <span>👤</span> Informasi Konseling
         </div>
         <div className="validation-field">
           <label>Siswa:</label>
@@ -151,6 +198,83 @@ export default function LaporanModal({ item, onClose, onSave }) {
             onChange={(e) => setCatatanTambahan(e.target.value)}
           />
         </div>
+
+        {showLanjutanOption && (
+          <div
+            style={{
+              marginTop: '16px',
+              padding: '14px 16px',
+              background: 'var(--blue-50, #eff6ff)',
+              border: '1px solid var(--blue-200, #bfdbfe)',
+              borderRadius: '10px',
+            }}
+          >
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '10px',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '13.5px',
+                color: 'var(--blue-800, #1e40af)',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={buatLanjutan}
+                onChange={(e) => setBuatLanjutan(e.target.checked)}
+                style={{ marginTop: '3px', width: 16, height: 16 }}
+              />
+              <span>
+                Buat pengajuan sesi lanjutan otomatis
+                <div style={{ fontWeight: 400, fontSize: '12px', color: 'var(--gray-600)', marginTop: 4 }}>
+                  Sistem akan membuat pengajuan baru yang terhubung ke sesi ini. Siswa mendapat notifikasi.
+                </div>
+              </span>
+            </label>
+
+            {buatLanjutan && (
+              <div style={{ marginTop: 14, display: 'grid', gap: 10 }}>
+                <div className="validation-field" style={{ marginBottom: 0 }}>
+                  <label htmlFor="lanjutanTanggal">Tanggal sesi lanjutan:</label>
+                  <input
+                    id="lanjutanTanggal"
+                    type="date"
+                    value={lanjutanTanggal}
+                    min={new Date().toISOString().slice(0, 10)}
+                    onChange={(e) => setLanjutanTanggal(e.target.value)}
+                  />
+                </div>
+                <div className="validation-field" style={{ marginBottom: 0 }}>
+                  <label htmlFor="lanjutanJam">Jam:</label>
+                  <select
+                    id="lanjutanJam"
+                    value={lanjutanJam}
+                    onChange={(e) => setLanjutanJam(e.target.value)}
+                  >
+                    {JAM_LIST.map((j) => (
+                      <option key={j} value={j}>
+                        {j}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="validation-field" style={{ marginBottom: 0 }}>
+                  <label htmlFor="lanjutanJenis">Jenis:</label>
+                  <select
+                    id="lanjutanJenis"
+                    value={lanjutanJenis}
+                    onChange={(e) => setLanjutanJenis(e.target.value)}
+                  >
+                    <option value="Luring">Luring</option>
+                    <option value="Daring">Daring</option>
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </Modal>
   );

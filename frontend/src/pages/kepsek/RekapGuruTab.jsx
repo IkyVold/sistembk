@@ -68,7 +68,7 @@ export default function RekapGuruTab({ semuaKonseling, onExportExcel }) {
                   <td><span className="status-badge status-proses">{proses}</span></td>
                   <td><span className="status-badge status-selesai">{selesai}</span></td>
                   <td><span className="status-badge status-dibatalkan">{dibatalkan}</span></td>
-                  <td><span className="status-badge status-tervalidasi">{denganLaporan}</span></td>
+                  <td><span className="status-badge status-terkonfirmasi">{denganLaporan}</span></td>
                 </tr>
               );
             })}

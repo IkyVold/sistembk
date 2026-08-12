@@ -4,7 +4,7 @@ export default function DetailModal({ item, onClose }) {
   let laporanContent = null;
   if (item.laporanGuru) {
     const laporan = item.laporanGuru;
-    let laporanStatusClass = 'status-tervalidasi';
+    let laporanStatusClass = 'status-terkonfirmasi';
     if (laporan.statusPenanganan?.includes('Selesai')) laporanStatusClass = 'status-selesai';
     else if (laporan.statusPenanganan?.includes('Monitoring')) laporanStatusClass = 'status-proses';
 
@@ -102,8 +102,8 @@ export default function DetailModal({ item, onClose }) {
             <div className="detail-label">Status</div>
             <div className="detail-value">
               <span className={`status-badge ${statusClass}`}>{item.status}</span>{' '}
-              <span className={`status-badge ${item.statusValidasi === 'Tervalidasi' ? 'status-tervalidasi' : 'status-proses'}`}>
-                {item.statusValidasi}
+              <span className={`status-badge ${item.statusKonfirmasi === 'Terkonfirmasi' ? 'status-terkonfirmasi' : 'status-proses'}`}>
+                {item.statusKonfirmasi}
               </span>
             </div>
           </div>

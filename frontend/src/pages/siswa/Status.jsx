@@ -120,7 +120,7 @@ export default function Status() {
   const kategori = item.kategori || '-';
   const deskripsi = item.deskripsi || 'Tidak ada deskripsi';
   const status = item.status || 'Proses';
-  const statusValidasi = item.status_validasi || 'Belum Divalidasi';
+  const statusKonfirmasi = item.status_konfirmasi || 'Belum Dikonfirmasi';
 
   let statusBadgeClass = 'badge badge-process';
   let statusBadgeLabel = 'Proses';
@@ -132,8 +132,8 @@ export default function Status() {
     statusBadgeLabel = 'Dibatalkan';
   }
 
-  const isTervalidasi = statusValidasi === 'Tervalidasi';
-  const showChatBtn = isTervalidasi && jenisKonseling === 'Daring';
+  const isTerkonfirmasi = statusKonfirmasi === 'Terkonfirmasi';
+  const showChatBtn = isTerkonfirmasi && jenisKonseling === 'Daring';
 
   return (
     <div className="status-page">
@@ -143,7 +143,7 @@ export default function Status() {
         <div className="page-header">
           <div className="page-badge"><span className="dot" /> Live Tracking</div>
           <h1 className="page-title">Status Konseling</h1>
-          <p className="page-subtitle">Jadwal kemungkinan berubah terkait validasi guru BK</p>
+          <p className="page-subtitle">Jadwal kemungkinan berubah terkait konfirmasi guru BK</p>
           <div>
             <span className="conn-pill">
               <span className={`conn-indicator ${connStatus === 'connecting' ? 'connecting' : connStatus === 'connected' ? 'connected' : ''}`} />
@@ -196,12 +196,12 @@ export default function Status() {
               <span className="info-value">{kategori}</span>
             </div>
             <div className="info-row">
-              <span className="info-label">Status Validasi</span>
+              <span className="info-label">Status Konfirmasi</span>
               <span className="info-value">
-                {isTervalidasi ? (
-                  <span className="badge badge-validated">✓ Tervalidasi</span>
+                {isTerkonfirmasi ? (
+                  <span className="badge badge-validated">✓ Terkonfirmasi</span>
                 ) : (
-                  <span className="badge badge-pending">Belum Divalidasi</span>
+                  <span className="badge badge-pending">Belum Dikonfirmasi</span>
                 )}
               </span>
             </div>

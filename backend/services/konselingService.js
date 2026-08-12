@@ -1,5 +1,5 @@
 // services/konselingService.js
-// Logika bisnis endpoint konseling (validasi, notifikasi, laporan, walk-in).
+// Logika bisnis endpoint konseling (konfirmasi, notifikasi, laporan, walk-in).
 const HttpError = require('../utils/HttpError');
 const { kirimNotifikasiJadwal, kirimNotifikasiGuru } = require('./notifikasiDispatch');
 const konselingModel = require('../models/konselingModel');
@@ -57,30 +57,95 @@ async function initMigrations() {
   }
   console.log('✅ Kolom laporan terstruktur siap di tabel konseling');
 
-  const validasiCols = [
-    `ADD COLUMN status_validasi VARCHAR(20) DEFAULT 'Belum Divalidasi' AFTER status`,
-    `ADD COLUMN tanggal_validasi DATE NULL AFTER status_validasi`,
-    `ADD COLUMN jam_validasi TIME NULL AFTER tanggal_validasi`,
+  // --- Migrasi terminologi Validasi → Konfirmasi ---
+  // 1) Rename kolom lama (jika masih pakai nama validasi)
+  const renameCols = [
+    ['status_validasi', 'status_konfirmasi'],
+    ['tanggal_validasi', 'tanggal_konfirmasi'],
+    ['jam_validasi', 'jam_konfirmasi'],
   ];
-  for (const clause of validasiCols) {
+  for (const [oldName, newName] of renameCols) {
+    try {
+      await konselingModel.runAlter(
+        `ALTER TABLE konseling CHANGE COLUMN \`${oldName}\` \`${newName}\` ${
+          oldName === 'status_validasi'
+            ? "VARCHAR(30) NOT NULL DEFAULT 'Belum Dikonfirmasi'"
+            : oldName.startsWith('tanggal')
+              ? 'DATE NULL DEFAULT NULL'
+              : 'TIME NULL DEFAULT NULL'
+        }`
+      );
+      console.log(`✅ Kolom ${oldName} diganti menjadi ${newName}`);
+    } catch (err) {
+      // ER_BAD_FIELD_ERROR = kolom lama tidak ada (sudah diganti / fresh install)
+      if (err.code !== 'ER_BAD_FIELD_ERROR' && err.code !== 'ER_DUP_FIELDNAME') {
+        // ignore if already renamed
+      }
+    }
+  }
+
+  // 2) Pastikan kolom baru ada (fresh install)
+  const konfirmasiCols = [
+    `ADD COLUMN status_konfirmasi VARCHAR(30) NOT NULL DEFAULT 'Belum Dikonfirmasi' AFTER status`,
+    `ADD COLUMN tanggal_konfirmasi DATE NULL AFTER status_konfirmasi`,
+    `ADD COLUMN jam_konfirmasi TIME NULL AFTER tanggal_konfirmasi`,
+  ];
+  for (const clause of konfirmasiCols) {
     try {
       await konselingModel.runAlter(`ALTER TABLE konseling ${clause}`);
     } catch (err) {
       if (err.code !== 'ER_DUP_FIELDNAME') {
-        console.error('❌ Error migrasi kolom validasi:', clause, err.message);
+        console.error('❌ Error migrasi kolom konfirmasi:', clause, err.message);
       }
     }
   }
-  console.log('✅ Kolom validasi jadwal siap di tabel konseling');
+
+  // 3) Samakan nilai status lama → baru
+  try {
+    await konselingModel.runAlter(
+      `UPDATE konseling SET status_konfirmasi = 'Terkonfirmasi' WHERE status_konfirmasi IN ('Tervalidasi', 'tervalidasi')`
+    );
+    await konselingModel.runAlter(
+      `UPDATE konseling SET status_konfirmasi = 'Belum Dikonfirmasi' WHERE status_konfirmasi IN ('Belum Divalidasi', 'belum divalidasi', '') OR status_konfirmasi IS NULL`
+    );
+  } catch (err) {
+    console.warn('⚠️ Update nilai status_konfirmasi:', err.message);
+  }
+  console.log('✅ Kolom & nilai konfirmasi jadwal siap di tabel konseling');
 
   try {
     await konselingModel.runAlter(
-      `ALTER TABLE konseling ADD COLUMN alasan_batal TEXT NULL AFTER status_validasi`
+      `ALTER TABLE konseling ADD COLUMN alasan_batal TEXT NULL AFTER status_konfirmasi`
     );
     console.log('✅ Kolom alasan_batal ditambahkan ke tabel konseling');
   } catch (err) {
     if (err.code !== 'ER_DUP_FIELDNAME') {
       console.error('❌ Error migrasi kolom alasan_batal:', err.message);
+    }
+  }
+
+  // Sesi lanjutan: relasi ke pengajuan sebelumnya (nullable self-FK)
+  try {
+    await konselingModel.runAlter(
+      `ALTER TABLE konseling ADD COLUMN pengajuan_sebelumnya_id INT NULL DEFAULT NULL`
+    );
+    console.log('✅ Kolom pengajuan_sebelumnya_id ditambahkan ke tabel konseling');
+  } catch (err) {
+    if (err.code !== 'ER_DUP_FIELDNAME') {
+      console.error('❌ Error migrasi kolom pengajuan_sebelumnya_id:', err.message);
+    }
+  }
+
+  // Index opsional untuk lookup anak
+  try {
+    await konselingModel.runAlter(
+      `CREATE INDEX idx_konseling_parent ON konseling (pengajuan_sebelumnya_id)`
+    );
+    console.log('✅ Index idx_konseling_parent dibuat');
+  } catch (err) {
+    // ER_DUP_KEYNAME = index sudah ada
+    if (err.code !== 'ER_DUP_KEYNAME' && err.code !== 'ER_DUP_FIELDNAME') {
+      console.warn('⚠️ Index parent (boleh diabaikan):', err.message);
     }
   }
 }
@@ -164,35 +229,35 @@ async function listByGuru(guru) {
   return konselingModel.listByGuru(guru);
 }
 
-/** PUT /api/konseling/:id/validasi — tetapkan/ubah jadwal + notifikasi. */
-async function validasi(id, { tanggal, jam }) {
+/** PUT /api/konseling/:id/konfirmasi — tetapkan/ubah jadwal + notifikasi. */
+async function konfirmasi(id, { tanggal, jam }) {
   if (!tanggal || !jam) {
-    throw new HttpError(400, 'Tanggal dan jam validasi wajib diisi');
+    throw new HttpError(400, 'Tanggal dan jam konfirmasi wajib diisi');
   }
 
-  const existingRows = await konselingModel.findForValidasi(id);
+  const existingRows = await konselingModel.findForKonfirmasi(id);
   if (existingRows.length === 0) {
     throw new HttpError(404, 'Data konseling tidak ditemukan');
   }
   const existing = existingRows[0];
 
-  // Guard: tidak boleh validasi sesi yang sudah Selesai / Dibatalkan
+  // Guard: tidak boleh konfirmasi sesi yang sudah Selesai / Dibatalkan
   if (existing.status !== 'Proses') {
     throw new HttpError(
       400,
-      `Konseling berstatus "${existing.status}" tidak dapat divalidasi. Hanya pengajuan berstatus Proses yang boleh divalidasi atau diubah jadwalnya.`
+      `Konseling berstatus "${existing.status}" tidak dapat dikonfirmasi. Hanya pengajuan berstatus Proses yang boleh dikonfirmasi atau diubah jadwalnya.`
     );
   }
 
-  const result = await konselingModel.updateValidasi(id, { tanggal, jam });
+  const result = await konselingModel.updateKonfirmasi(id, { tanggal, jam });
   if (result.affectedRows === 0) {
-    throw new HttpError(400, 'Validasi gagal. Pastikan status konseling masih Proses.');
+    throw new HttpError(400, 'Konfirmasi gagal. Pastikan status konseling masih Proses.');
   }
 
-  const sudahTervalidasi = existing.status_validasi === 'Tervalidasi';
+  const sudahTerkonfirmasi = existing.status_konfirmasi === 'Terkonfirmasi';
   const jadwalBerubah = existing.tanggalLama !== tanggal || existing.jamLama !== jam;
 
-  if (sudahTervalidasi && jadwalBerubah) {
+  if (sudahTerkonfirmasi && jadwalBerubah) {
     await kirimNotifikasiJadwal({
       siswaId: existing.siswa_id,
       konselingId: id,
@@ -203,7 +268,7 @@ async function validasi(id, { tanggal, jam }) {
       tanggalBaru: tanggal,
       jamBaru: jam,
     });
-  } else if (!sudahTervalidasi) {
+  } else if (!sudahTerkonfirmasi) {
     await kirimNotifikasiJadwal({
       siswaId: existing.siswa_id,
       konselingId: id,
@@ -214,7 +279,7 @@ async function validasi(id, { tanggal, jam }) {
     });
   }
 
-  return { message: 'Jadwal berhasil divalidasi' };
+  return { message: 'Jadwal berhasil dikonfirmasi' };
 }
 
 /** PUT /api/konseling/:id/status — ubah status (mis. Dibatalkan). */
@@ -407,6 +472,89 @@ async function batalkanOlehSiswa(id, { alasan }, user) {
   };
 }
 
+
+/**
+ * POST /api/konseling/lanjutan
+ * Guru BK membuat pengajuan sesi lanjutan dari sesi yang sudah selesai
+ * dengan status penanganan Monitoring (atau secara eksplisit).
+ * Relasi: pengajuan_sebelumnya_id = id sesi induk.
+ */
+async function createLanjutan(body, user) {
+  const {
+    pengajuan_sebelumnya_id,
+    tanggal,
+    jam,
+    jenis,
+    kategori,
+    deskripsi,
+    guru_bk,
+  } = body || {};
+
+  const parentId = parseInt(pengajuan_sebelumnya_id, 10);
+  if (!parentId || Number.isNaN(parentId)) {
+    throw new HttpError(400, 'pengajuan_sebelumnya_id wajib diisi');
+  }
+  if (!tanggal || !jam) {
+    throw new HttpError(400, 'Tanggal dan jam sesi lanjutan wajib diisi');
+  }
+
+  const parentRows = await konselingModel.findByIdForLanjutan(parentId);
+  if (parentRows.length === 0) {
+    throw new HttpError(404, 'Sesi sebelumnya tidak ditemukan');
+  }
+  const parent = parentRows[0];
+
+  // Hanya boleh dari sesi yang sudah Selesai (laporan sudah ada)
+  if (parent.status !== 'Selesai') {
+    throw new HttpError(
+      400,
+      `Sesi lanjutan hanya bisa dibuat dari konseling berstatus Selesai (saat ini: ${parent.status})`
+    );
+  }
+
+  const jenisFinal = jenis && ['Luring', 'Daring'].includes(jenis) ? jenis : (parent.jenis || 'Luring');
+  const kategoriFinal = (kategori && String(kategori).trim()) || parent.kategori || 'Lainnya';
+  const deskripsiFinal = (deskripsi && String(deskripsi).trim())
+    || `Sesi lanjutan dari konseling #${parentId}. ${parent.deskripsi ? parent.deskripsi.substring(0, 200) : ''}`.trim();
+  const guruFinal = (guru_bk && String(guru_bk).trim()) || parent.guru_bk;
+
+  if (deskripsiFinal.length < 20) {
+    throw new HttpError(400, 'Deskripsi minimal 20 karakter');
+  }
+
+  const result = await konselingModel.insertPengajuan({
+    siswaId: parent.siswa_id,
+    guru_bk: guruFinal,
+    tanggal,
+    jam,
+    jenis: jenisFinal,
+    kategori: kategoriFinal,
+    deskripsi: deskripsiFinal,
+    kelasSnapshot: parent.kelas_siswa || '-',
+    pengajuan_sebelumnya_id: parentId,
+  });
+
+  // Notifikasi ke siswa: sesi lanjutan telah dibuat oleh Guru BK
+  try {
+    await kirimNotifikasiJadwal({
+      siswaId: parent.siswa_id,
+      konselingId: result.insertId,
+      judul: 'Sesi Konseling Lanjutan',
+      pesan: `Guru BK menjadwalkan sesi lanjutan pada ${tanggal} pukul ${jam} (lanjutan dari sesi #${parentId}). Silakan cek detail di riwayat konseling.`,
+      tanggalBaru: tanggal,
+      jamBaru: jam,
+    });
+  } catch (e) {
+    console.warn('Gagal kirim notifikasi sesi lanjutan ke siswa:', e.message);
+  }
+
+  return {
+    message: 'Pengajuan sesi lanjutan berhasil dibuat',
+    id: result.insertId,
+    pengajuan_sebelumnya_id: parentId,
+  };
+}
+
 /** GET /api/konseling/:nis — riwayat milik satu siswa. */
 async function listByNis(nis) {
   const siswaRows = await siswaModel.findIdOnlyByNis(nis);
@@ -416,13 +564,22 @@ async function listByNis(nis) {
   return konselingModel.listBySiswaId(siswaRows[0].id);
 }
 
-/** GET /api/konseling/detail/:id */
+/** GET /api/konseling/detail/:id — termasuk info parent & anak (rantai sesi). */
 async function getDetail(id) {
   const rows = await konselingModel.findDetailById(id);
   if (rows.length === 0) {
     throw new HttpError(404, 'Data konseling tidak ditemukan');
   }
-  return rows[0];
+  const row = rows[0];
+  const parent = row.pengajuan_sebelumnya_id
+    ? await konselingModel.findParentBrief(row.pengajuan_sebelumnya_id)
+    : null;
+  const children = await konselingModel.findChildrenByParentId(id);
+  return {
+    ...row,
+    sesi_sebelumnya: parent,
+    sesi_lanjutan: children,
+  };
 }
 
 module.exports = {
@@ -430,12 +587,13 @@ module.exports = {
   createPengajuan,
   listAll,
   listByGuru,
-  validasi,
+  konfirmasi,
   updateStatus,
   simpanLaporan,
   createWalkin,
   batalkan,
   batalkanOlehSiswa,
+  createLanjutan,
   listByNis,
   getDetail,
 };

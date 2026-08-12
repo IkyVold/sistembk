@@ -86,7 +86,7 @@ export default function SemuaKonselingTab({ semuaKonseling, onDetail, onExportEx
               <th>Guru BK</th>
               <th>Kategori</th>
               <th>Jenis</th>
-              <th>Status Validasi</th>
+              <th>Status Konfirmasi</th>
               <th>Status</th>
               <th>Laporan</th>
               <th>Aksi</th>
@@ -104,7 +104,7 @@ export default function SemuaKonselingTab({ semuaKonseling, onDetail, onExportEx
                 let statusClass = 'status-proses';
                 if (item.status === 'Selesai') statusClass = 'status-selesai';
                 else if (item.status === 'Dibatalkan') statusClass = 'status-dibatalkan';
-                const validasiClass = item.statusValidasi === 'Tervalidasi' ? 'status-tervalidasi' : 'status-proses';
+                const konfirmasiClass = item.statusKonfirmasi === 'Terkonfirmasi' ? 'status-terkonfirmasi' : 'status-proses';
 
                 return (
                   <tr key={item.id}>
@@ -115,7 +115,7 @@ export default function SemuaKonselingTab({ semuaKonseling, onDetail, onExportEx
                     <td><span className="guru-badge">{item.guru}</span></td>
                     <td>{item.kategori || '-'}</td>
                     <td>{item.jenis || '-'}</td>
-                    <td><span className={`status-badge ${validasiClass}`}>{item.statusValidasi}</span></td>
+                    <td><span className={`status-badge ${konfirmasiClass}`}>{item.statusKonfirmasi}</span></td>
                     <td><span className={`status-badge ${statusClass}`}>{item.status}</span></td>
                     <td>
                       {item.laporanGuru ? (

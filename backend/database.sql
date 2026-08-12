@@ -248,9 +248,9 @@ CREATE TABLE `konseling` (
   `deskripsi` text DEFAULT NULL,
   `kelas_siswa` varchar(20) DEFAULT NULL,
   `status` varchar(20) DEFAULT 'Proses',
-  `status_validasi` varchar(30) NOT NULL DEFAULT 'Belum Divalidasi',
-  `tanggal_validasi` date DEFAULT NULL,
-  `jam_validasi` time DEFAULT NULL,
+  `status_konfirmasi` varchar(30) NOT NULL DEFAULT 'Belum Dikonfirmasi',
+  `tanggal_konfirmasi` date DEFAULT NULL,
+  `jam_konfirmasi` time DEFAULT NULL,
   `laporan` text DEFAULT NULL,
   `laporan_tanggal` date DEFAULT NULL,
   `laporan_waktu` time DEFAULT NULL,
@@ -269,19 +269,19 @@ CREATE TABLE `konseling` (
 -- Dumping data untuk tabel `konseling`
 --
 
-INSERT INTO `konseling` (`id`, `siswa_id`, `guru_bk`, `tanggal`, `jam`, `jenis`, `kategori`, `deskripsi`, `kelas_siswa`, `status`, `status_validasi`, `tanggal_validasi`, `jam_validasi`, `laporan`, `laporan_tanggal`, `laporan_waktu`, `laporan_dibuat_oleh`, `laporan_kesimpulan`, `laporan_rekomendasi`, `laporan_status_penanganan`, `laporan_catatan_tambahan`, `laporan_created_at`, `input_manual`, `catatan_walkin`, `created_at`) VALUES
-(15, 12, 'Dicky Ardiansyah S.Pd', '2026-08-01', '15:00:00', 'Luring', 'Akademik', 'asddddddddddddddddddddddd', '10 IPA 1', 'Selesai', 'Tervalidasi', '2026-08-01', '15:00:00', NULL, '2026-08-03', '14:01:16', 'Dicky Ardiansyah S.Pd', 'mantap', 'sesi lanjutan', 'Monitoring', '-', '2026-08-03 07:01:16', 0, NULL, '2026-08-01 06:32:18'),
-(16, 12, 'Dicky Ardiansyah S.Pd', '2026-08-04', '13:30:00', 'Luring', 'Keluarga', 'jadi saya ada permasalahan dengan orang tua saya sehingga menyebabkan untuk terhambat pergi ke sekolah', '10 IPA 1', 'Proses', 'Belum Divalidasi', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2026-08-04 03:13:02'),
-(17, 12, 'Dicky Ardiansyah S.Pd', '2026-08-05', '13:00:00', 'Daring', 'Akademik', 'jadi gini bu saya sudah bayar spp kemarin berhubungan bukti hilang jadi tidak ada yang percaya', '10 IPA 1', 'Proses', 'Tervalidasi', '2026-08-05', '13:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2026-08-05 06:55:32'),
-(18, 833, 'Dicky Ardiansyah S.Pd', '2026-08-06', '15:00:00', 'Daring', 'Bullying', 'hallo pak jadi saya di bully pada saat kelas di mulai', 'XII - 8', 'Proses', 'Tervalidasi', '2026-08-06', '15:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2026-08-06 02:27:32'),
-(19, 12, 'Dicky Ardiansyah S.Pd', '2026-08-07', '07:00:00', 'Daring', 'Sosial', 'astaga ya allah aku anngis', '10 IPA 1', 'Proses', 'Tervalidasi', '2026-08-07', '07:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2026-08-06 23:32:03'),
-(20, 12, 'Dicky Ardiansyah S.Pd', '2026-08-07', '15:00:00', 'Daring', 'Bullying', 'pakkk tolongggggggggggggggggggggggggggggg', '10 IPA 1', 'Proses', 'Tervalidasi', '2026-08-07', '15:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2026-08-06 23:33:24'),
-(21, 310, 'Dicky Ardiansyah S.Pd', '2026-08-07', '16:00:00', 'Daring', 'Keluarga', 'ada masalah sama keluara', 'XI - 2', 'Proses', 'Tervalidasi', '2026-08-07', '16:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2026-08-06 23:35:01'),
-(22, 310, 'Dicky Ardiansyah S.Pd', '2026-08-07', '14:00:00', 'Daring', 'Sosial', 'jadi ada masalah sosial untuk indonesia', 'XI - 2', 'Proses', 'Belum Divalidasi', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2026-08-06 23:37:30'),
-(23, 310, 'Dicky Ardiansyah S.Pd', '2026-08-07', '12:30:00', 'Daring', 'Bullying', 'saya di bully di pukul', 'XI - 2', 'Proses', 'Tervalidasi', '2026-08-07', '12:30:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2026-08-06 23:38:26'),
-(24, 382, 'Dicky Ardiansyah S.Pd', '2026-08-07', '10:00:00', 'Daring', 'Akademik', 'kenapa saya di surh membayar ukt lagi', 'XI - 4', 'Proses', 'Tervalidasi', '2026-08-07', '10:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2026-08-07 02:09:24'),
-(25, 382, 'Dicky Ardiansyah S.Pd', '2026-08-07', '16:00:00', 'Daring', 'Keluarga', 'saddddddddddddddddddddddddd', 'XI - 4', 'Proses', 'Belum Divalidasi', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2026-08-07 02:10:48'),
-(26, 558, 'Dicky Ardiansyah S.Pd', '2026-08-07', '17:00:00', 'Daring', 'Bullying', 'pak tolong pak tolong', 'XI - 9', 'Selesai', 'Tervalidasi', '2026-08-07', '17:00:00', NULL, '2026-08-07', '16:12:28', 'Dicky Ardiansyah S.Pd', 'mantep ini', 'bisa', 'Selesai - Masalah Teratasi', '-', '2026-08-07 09:12:28', 0, NULL, '2026-08-07 09:10:07');
+INSERT INTO `konseling` (`id`, `siswa_id`, `guru_bk`, `tanggal`, `jam`, `jenis`, `kategori`, `deskripsi`, `kelas_siswa`, `status`, `status_konfirmasi`, `tanggal_konfirmasi`, `jam_konfirmasi`, `laporan`, `laporan_tanggal`, `laporan_waktu`, `laporan_dibuat_oleh`, `laporan_kesimpulan`, `laporan_rekomendasi`, `laporan_status_penanganan`, `laporan_catatan_tambahan`, `laporan_created_at`, `input_manual`, `catatan_walkin`, `created_at`) VALUES
+(15, 12, 'Dicky Ardiansyah S.Pd', '2026-08-01', '15:00:00', 'Luring', 'Akademik', 'asddddddddddddddddddddddd', '10 IPA 1', 'Selesai', 'Terkonfirmasi', '2026-08-01', '15:00:00', NULL, '2026-08-03', '14:01:16', 'Dicky Ardiansyah S.Pd', 'mantap', 'sesi lanjutan', 'Monitoring', '-', '2026-08-03 07:01:16', 0, NULL, '2026-08-01 06:32:18'),
+(16, 12, 'Dicky Ardiansyah S.Pd', '2026-08-04', '13:30:00', 'Luring', 'Keluarga', 'jadi saya ada permasalahan dengan orang tua saya sehingga menyebabkan untuk terhambat pergi ke sekolah', '10 IPA 1', 'Proses', 'Belum Dikonfirmasi', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2026-08-04 03:13:02'),
+(17, 12, 'Dicky Ardiansyah S.Pd', '2026-08-05', '13:00:00', 'Daring', 'Akademik', 'jadi gini bu saya sudah bayar spp kemarin berhubungan bukti hilang jadi tidak ada yang percaya', '10 IPA 1', 'Proses', 'Terkonfirmasi', '2026-08-05', '13:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2026-08-05 06:55:32'),
+(18, 833, 'Dicky Ardiansyah S.Pd', '2026-08-06', '15:00:00', 'Daring', 'Bullying', 'hallo pak jadi saya di bully pada saat kelas di mulai', 'XII - 8', 'Proses', 'Terkonfirmasi', '2026-08-06', '15:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2026-08-06 02:27:32'),
+(19, 12, 'Dicky Ardiansyah S.Pd', '2026-08-07', '07:00:00', 'Daring', 'Sosial', 'astaga ya allah aku anngis', '10 IPA 1', 'Proses', 'Terkonfirmasi', '2026-08-07', '07:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2026-08-06 23:32:03'),
+(20, 12, 'Dicky Ardiansyah S.Pd', '2026-08-07', '15:00:00', 'Daring', 'Bullying', 'pakkk tolongggggggggggggggggggggggggggggg', '10 IPA 1', 'Proses', 'Terkonfirmasi', '2026-08-07', '15:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2026-08-06 23:33:24'),
+(21, 310, 'Dicky Ardiansyah S.Pd', '2026-08-07', '16:00:00', 'Daring', 'Keluarga', 'ada masalah sama keluara', 'XI - 2', 'Proses', 'Terkonfirmasi', '2026-08-07', '16:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2026-08-06 23:35:01'),
+(22, 310, 'Dicky Ardiansyah S.Pd', '2026-08-07', '14:00:00', 'Daring', 'Sosial', 'jadi ada masalah sosial untuk indonesia', 'XI - 2', 'Proses', 'Belum Dikonfirmasi', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2026-08-06 23:37:30'),
+(23, 310, 'Dicky Ardiansyah S.Pd', '2026-08-07', '12:30:00', 'Daring', 'Bullying', 'saya di bully di pukul', 'XI - 2', 'Proses', 'Terkonfirmasi', '2026-08-07', '12:30:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2026-08-06 23:38:26'),
+(24, 382, 'Dicky Ardiansyah S.Pd', '2026-08-07', '10:00:00', 'Daring', 'Akademik', 'kenapa saya di surh membayar ukt lagi', 'XI - 4', 'Proses', 'Terkonfirmasi', '2026-08-07', '10:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2026-08-07 02:09:24'),
+(25, 382, 'Dicky Ardiansyah S.Pd', '2026-08-07', '16:00:00', 'Daring', 'Keluarga', 'saddddddddddddddddddddddddd', 'XI - 4', 'Proses', 'Belum Dikonfirmasi', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2026-08-07 02:10:48'),
+(26, 558, 'Dicky Ardiansyah S.Pd', '2026-08-07', '17:00:00', 'Daring', 'Bullying', 'pak tolong pak tolong', 'XI - 9', 'Selesai', 'Terkonfirmasi', '2026-08-07', '17:00:00', NULL, '2026-08-07', '16:12:28', 'Dicky Ardiansyah S.Pd', 'mantep ini', 'bisa', 'Selesai - Masalah Teratasi', '-', '2026-08-07 09:12:28', 0, NULL, '2026-08-07 09:10:07');
 
 -- --------------------------------------------------------
 

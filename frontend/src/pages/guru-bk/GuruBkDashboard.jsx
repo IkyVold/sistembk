@@ -24,9 +24,10 @@ import InformasiModal from './modals/InformasiModal';
 import { mapKonselingRow, formatTanggal } from './helpers';
 import {
   fetchKonselingByGuru,
-  validasiJadwalKonseling,
+  konfirmasiJadwalKonseling,
   ubahStatusKonseling,
   simpanLaporanKonseling,
+  buatSesiLanjutan,
   simpanWalkinKonseling,
 } from './api/konselingService';
 import { fetchAllSiswa, tambahSiswaManual } from './api/siswaService';
@@ -184,7 +185,7 @@ export default function GuruBkDashboard() {
 
   // Notifikasi di judul tab browser
   const prosesCount = useMemo(
-    () => semuaKonseling.filter((item) => item.status === 'Proses' && item.statusValidasi !== 'Tervalidasi').length,
+    () => semuaKonseling.filter((item) => item.status === 'Proses' && item.statusKonfirmasi !== 'Terkonfirmasi').length,
     [semuaKonseling]
   );
   useEffect(() => {
@@ -195,12 +196,12 @@ export default function GuruBkDashboard() {
   const stats = useMemo(() => {
     const total = semuaKonseling.length;
     const proses = prosesCount;
-    const tervalidasi = semuaKonseling.filter(
-      (item) => item.statusValidasi === 'Tervalidasi' && item.status !== 'Selesai' && item.status !== 'Dibatalkan'
+    const terkonfirmasi = semuaKonseling.filter(
+      (item) => item.statusKonfirmasi === 'Terkonfirmasi' && item.status !== 'Selesai' && item.status !== 'Dibatalkan'
     ).length;
     const selesai = semuaKonseling.filter((item) => item.status === 'Selesai').length;
     const dibatalkan = semuaKonseling.filter((item) => item.status === 'Dibatalkan').length;
-    return { total, proses, tervalidasi, selesai, dibatalkan };
+    return { total, proses, terkonfirmasi, selesai, dibatalkan };
   }, [semuaKonseling, prosesCount]);
 
   const tahunAjaranOptions = useMemo(() => {
@@ -214,10 +215,10 @@ export default function GuruBkDashboard() {
   const konselingByFilter = useMemo(() => {
     switch (currentFilter) {
       case 'proses':
-        return semuaKonseling.filter((item) => item.status === 'Proses' && item.statusValidasi !== 'Tervalidasi');
-      case 'tervalidasi':
+        return semuaKonseling.filter((item) => item.status === 'Proses' && item.statusKonfirmasi !== 'Terkonfirmasi');
+      case 'terkonfirmasi':
         return semuaKonseling.filter(
-          (item) => item.statusValidasi === 'Tervalidasi' && item.status !== 'Selesai' && item.status !== 'Dibatalkan'
+          (item) => item.statusKonfirmasi === 'Terkonfirmasi' && item.status !== 'Selesai' && item.status !== 'Dibatalkan'
         );
       case 'selesai':
         return semuaKonseling.filter((item) => item.status === 'Selesai');
@@ -265,9 +266,9 @@ export default function GuruBkDashboard() {
     setDetailItemId(id);
   }
 
-  async function handleValidasi(item, { tanggal, jam }) {
+  async function handleKonfirmasi(item, { tanggal, jam }) {
     if (!tanggal || !jam) {
-      alert('❌ Silakan pilih tanggal dan jam validasi terlebih dahulu!');
+      alert('❌ Silakan pilih tanggal dan jam konfirmasi terlebih dahulu!');
       return;
     }
 
@@ -276,21 +277,21 @@ export default function GuruBkDashboard() {
       konfirmasi = confirm(
         `⚠️ PERUBAHAN JADWAL KONSELING\n\n` +
           `Jadwal Diajukan Siswa:\n📅 Tanggal: ${item.tanggal}\n⏰ Jam: ${item.jam}\n\n` +
-          `Jadwal Validasi Guru BK:\n📅 Tanggal: ${formatTanggal(tanggal)}\n⏰ Jam: ${jam}\n\n` +
-          `Siswa akan melihat jadwal yang sudah divalidasi ini.\nApakah Anda yakin ingin memvalidasi jadwal ini?`
+          `Jadwal Konfirmasi Guru BK:\n📅 Tanggal: ${formatTanggal(tanggal)}\n⏰ Jam: ${jam}\n\n` +
+          `Siswa akan melihat jadwal yang sudah dikonfirmasi ini.\nApakah Anda yakin ingin memkonfirmasi jadwal ini?`
       );
     }
     if (!konfirmasi) return;
 
-    const res = await validasiJadwalKonseling(item.id, { tanggal, jam });
+    const res = await konfirmasiJadwalKonseling(item.id, { tanggal, jam });
     if (res.success) {
       await loadSemuaKonseling(currentGuru);
       setDetailItemId(null);
       alert(
-        '✅ Jadwal berhasil divalidasi!\n\nSiswa sekarang dapat melihat jadwal yang sudah dikonfirmasi.\n\nSetelah sesi konseling selesai, jangan lupa untuk membuat laporan hasil konseling.'
+        '✅ Jadwal berhasil dikonfirmasi!\n\nSiswa sekarang dapat melihat jadwal yang sudah dikonfirmasi.\n\nSetelah sesi konseling selesai, jangan lupa untuk membuat laporan hasil konseling.'
       );
     } else {
-      alert(`❌ Gagal memvalidasi jadwal: ${res.error}`);
+      alert(`❌ Gagal memkonfirmasi jadwal: ${res.error}`);
     }
   }
 
@@ -324,15 +325,38 @@ export default function GuruBkDashboard() {
   }
 
   async function handleSaveLaporan(id, payload) {
-    const res = await simpanLaporanKonseling(id, { ...payload, dibuatOleh: currentGuru.nama });
-    if (res.success) {
-      await loadSemuaKonseling(currentGuru);
-      setLaporanItemId(null);
-      const edited = res.data.edited;
-      alert(`✅ ${res.data.message}${edited ? '' : '\n\nStatus konseling telah diubah menjadi Selesai.'}`);
-    } else {
+    const { buatLanjutan, lanjutan, ...laporanPayload } = payload;
+    const res = await simpanLaporanKonseling(id, { ...laporanPayload, dibuatOleh: currentGuru.nama });
+    if (!res.success) {
       alert(`❌ Terjadi kesalahan saat menyimpan laporan: ${res.error}`);
+      return;
     }
+
+    let lanjutanMsg = '';
+    if (buatLanjutan && lanjutan) {
+      const item = semuaKonseling.find((k) => k.id === id);
+      const lanRes = await buatSesiLanjutan({
+        pengajuan_sebelumnya_id: id,
+        tanggal: lanjutan.tanggal,
+        jam: lanjutan.jam,
+        jenis: lanjutan.jenis,
+        kategori: lanjutan.kategori || item?.kategori,
+        deskripsi: lanjutan.deskripsi,
+        guru_bk: currentGuru.nama,
+      });
+      if (lanRes.success) {
+        lanjutanMsg = `\n\n🔗 Sesi lanjutan #${lanRes.data.id} berhasil dibuat (terhubung ke sesi #${id}).`;
+      } else {
+        lanjutanMsg = `\n\n⚠️ Laporan tersimpan, tetapi gagal membuat sesi lanjutan: ${lanRes.error}`;
+      }
+    }
+
+    await loadSemuaKonseling(currentGuru);
+    setLaporanItemId(null);
+    const edited = res.data.edited;
+    alert(
+      `✅ ${res.data.message}${edited ? '' : '\n\nStatus konseling telah diubah menjadi Selesai.'}${lanjutanMsg}`
+    );
   }
 
   function handleLihatLaporan(id) {
@@ -349,8 +373,8 @@ export default function GuruBkDashboard() {
       alert('Chat hanya tersedia untuk konseling daring (online)');
       return;
     }
-    if (item.statusValidasi !== 'Tervalidasi') {
-      alert('Chat dapat diakses setelah jadwal divalidasi');
+    if (item.statusKonfirmasi !== 'Terkonfirmasi') {
+      alert('Chat dapat diakses setelah jadwal dikonfirmasi');
       return;
     }
 
@@ -397,7 +421,7 @@ export default function GuruBkDashboard() {
       setLaporanItemId(res.data.id);
     } else {
       alert(
-        '✅ Data konseling walk-in berhasil disimpan!\n\nData sudah berstatus Tervalidasi dan muncul di tab "Sudah Divalidasi". Silakan buat laporan hasil konseling setelah sesi selesai.'
+        '✅ Data konseling walk-in berhasil disimpan!\n\nData sudah berstatus Terkonfirmasi dan muncul di tab "Sudah Dikonfirmasi". Silakan buat laporan hasil konseling setelah sesi selesai.'
       );
     }
   }
@@ -541,7 +565,7 @@ export default function GuruBkDashboard() {
   if (!currentGuru) return null;
 
   const tabTitles = {
-    konseling: { title: '📋 Monitoring & Validasi Konseling', desc: `Kelola, validasi jadwal, dan pantau semua permintaan konseling dari siswa untuk <strong>${currentGuru.nama}</strong>` },
+    konseling: { title: '📋 Monitoring & Konfirmasi Konseling', desc: `Kelola, konfirmasi jadwal, dan pantau semua permintaan konseling dari siswa untuk <strong>${currentGuru.nama}</strong>` },
     siswa: { title: '👥 Daftar Siswa', desc: '' },
     informasi: { title: '💡 Informasi & FAQ Chatbot', desc: '' },
   };
@@ -576,7 +600,7 @@ export default function GuruBkDashboard() {
           <div className="logo">📚</div>
           <div className="header-info">
             <h1>Dashboard Guru BK</h1>
-            <p>Stop Bullying - Monitoring &amp; Validasi Konseling Siswa</p>
+            <p>Stop Bullying - Monitoring &amp; Konfirmasi Konseling Siswa</p>
           </div>
         </div>
         <div className="user-info" style={{ position: 'relative' }}>
@@ -768,7 +792,7 @@ export default function GuruBkDashboard() {
               onWalkin={() => setShowWalkinModal(true)}
               onCetak={handleCetak}
               onDetail={handleOpenDetail}
-              onValidasi={handleOpenDetail}
+              onKonfirmasi={handleOpenDetail}
               onLaporan={handleOpenLaporan}
               onBatal={handleBatal}
               onChat={handleChat}
@@ -823,7 +847,7 @@ export default function GuruBkDashboard() {
       <DetailModal
         item={detailItem}
         onClose={() => setDetailItemId(null)}
-        onValidasi={handleValidasi}
+        onKonfirmasi={handleKonfirmasi}
         onBatal={handleBatal}
         onLaporan={handleOpenLaporan}
         onEditLaporan={handleOpenLaporan}

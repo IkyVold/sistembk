@@ -122,7 +122,7 @@ export default function WalkinModal({ show, onClose, onSave }) {
         <span>
           Gunakan form ini untuk siswa yang datang/dibawa langsung ke ruang BK <strong>tanpa mengajukan jadwal
           lebih dulu</strong> (misalnya ditemukan menangis di kelas/kamar mandi). Data akan otomatis tercatat
-          sebagai <strong>Tervalidasi</strong> karena sesi sudah berlangsung.
+          sebagai <strong>Terkonfirmasi</strong> karena sesi sudah berlangsung.
         </span>
       </div>
 

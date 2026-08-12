@@ -227,8 +227,8 @@ export default function DetailHistory() {
 
   const guruNama = item.guru || '–';
   const status = item.status || 'Proses';
-  const statusValidasi = item.status_validasi || 'Belum Divalidasi';
-  const isTervalidasi = statusValidasi === 'Tervalidasi';
+  const statusKonfirmasi = (item.status_konfirmasi === 'Tervalidasi' ? 'Terkonfirmasi' : (item.status_konfirmasi || 'Belum Dikonfirmasi'));
+  const isTerkonfirmasi = statusKonfirmasi === 'Terkonfirmasi';
 
   let statusBadgeClass = 'badge-proses';
   if (status === 'Selesai') statusBadgeClass = 'badge-selesai';
@@ -245,11 +245,11 @@ export default function DetailHistory() {
   };
   const hasLaporan = Boolean(laporan.kesimpulan || laporan.rekomendasi || laporan.statusPenanganan);
 
-  let laporanStatusClass = 'badge-tervalidasi';
+  let laporanStatusClass = 'badge-terkonfirmasi';
   if (laporan.statusPenanganan?.includes('Selesai')) laporanStatusClass = 'badge-selesai';
   else if (laporan.statusPenanganan?.includes('Monitoring')) laporanStatusClass = 'badge-proses';
 
-  const showChatBtn = item.jenis === 'Daring' && isTervalidasi && status !== 'Dibatalkan';
+  const showChatBtn = item.jenis === 'Daring' && isTerkonfirmasi && status !== 'Dibatalkan';
   const canBatalkan = status === 'Proses';
 
   return (
@@ -284,6 +284,67 @@ export default function DetailHistory() {
           </span>
         </div>
 
+        {(item.sesi_sebelumnya || (item.sesi_lanjutan && item.sesi_lanjutan.length > 0) || item.pengajuan_sebelumnya_id) && (
+          <div className="info-card" style={{ borderColor: '#bfdbfe', background: '#f8fbff' }}>
+            <div className="card-section-title">🔗 Rantai Sesi Konseling</div>
+            {item.sesi_sebelumnya && (
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 12, color: '#64748b', marginBottom: 4 }}>Sesi sebelumnya</div>
+                <button
+                  type="button"
+                  onClick={() => navigate(`/history/${item.sesi_sebelumnya.id}`)}
+                  style={{
+                    width: '100%', textAlign: 'left', padding: '10px 12px',
+                    borderRadius: 8, border: '1px solid #bfdbfe', background: '#fff',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <strong>#{item.sesi_sebelumnya.id}</strong>
+                  {' · '}{item.sesi_sebelumnya.tanggal || '–'} {item.sesi_sebelumnya.jam || ''}
+                  {' · '}{item.sesi_sebelumnya.kategori || '–'}
+                  {' · '}<em>{item.sesi_sebelumnya.status}</em>
+                </button>
+              </div>
+            )}
+            {!item.sesi_sebelumnya && item.pengajuan_sebelumnya_id && (
+              <div style={{ marginBottom: 12, fontSize: 13 }}>
+                Lanjutan dari sesi{' '}
+                <button
+                  type="button"
+                  onClick={() => navigate(`/history/${item.pengajuan_sebelumnya_id}`)}
+                  style={{ color: '#1d4ed8', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                >
+                  #{item.pengajuan_sebelumnya_id}
+                </button>
+              </div>
+            )}
+            {item.sesi_lanjutan && item.sesi_lanjutan.length > 0 && (
+              <div>
+                <div style={{ fontSize: 12, color: '#64748b', marginBottom: 4 }}>Sesi lanjutan</div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {item.sesi_lanjutan.map((child) => (
+                    <button
+                      key={child.id}
+                      type="button"
+                      onClick={() => navigate(`/history/${child.id}`)}
+                      style={{
+                        width: '100%', textAlign: 'left', padding: '10px 12px',
+                        borderRadius: 8, border: '1px solid #bfdbfe', background: '#fff',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <strong>#{child.id}</strong>
+                      {' · '}{child.tanggal || '–'} {child.jam || ''}
+                      {' · '}{child.kategori || '–'}
+                      {' · '}<em>{child.status}</em>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="info-card">
           <div className="card-section-title">Informasi Jadwal</div>
           <div className="info-grid">
@@ -312,11 +373,11 @@ export default function DetailHistory() {
               <div className="info-cell-value">{item.kategori || '–'}</div>
             </div>
             <div className="info-cell">
-              <div className="info-cell-label">Status Validasi</div>
+              <div className="info-cell-label">Status Konfirmasi</div>
               <div className="info-cell-value">
-                <span className={`badge ${isTervalidasi ? 'badge-tervalidasi' : 'badge-belum'}`}>
+                <span className={`badge ${isTerkonfirmasi ? 'badge-terkonfirmasi' : 'badge-belum'}`}>
                   <span className="badge-dot" />
-                  {statusValidasi}
+                  {statusKonfirmasi}
                 </span>
               </div>
             </div>

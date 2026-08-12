@@ -11,7 +11,7 @@ export default function KonselingTable({
   data,
   emptyMessage,
   onDetail,
-  onValidasi,
+  onKonfirmasi,
   onLaporan,
   onBatal,
   onChat,
@@ -52,12 +52,12 @@ export default function KonselingTable({
           <th>Tahun Ajaran</th>
           <th>Tanggal Diajukan</th>
           <th>Jam</th>
-          <th>Tanggal Validasi</th>
-          <th>Jam Validasi</th>
+          <th>Tanggal Konfirmasi</th>
+          <th>Jam Konfirmasi</th>
           <th>Jenis</th>
           <th>Kategori</th>
           <th style={{ minWidth: '250px' }}>Deskripsi Masalah</th>
-          <th>Status Validasi</th>
+          <th>Status Konfirmasi</th>
           <th>Status</th>
           <th>Laporan</th>
           <th>Aksi</th>
@@ -65,15 +65,15 @@ export default function KonselingTable({
       </thead>
       <tbody>
         {data.map((item, index) => {
-          const statusValidasiClass = item.statusValidasi === 'Tervalidasi' ? 'status-selesai' : 'status-proses';
+          const statusKonfirmasiClass = item.statusKonfirmasi === 'Terkonfirmasi' ? 'status-selesai' : 'status-proses';
           let statusClass = 'status-proses';
           if (item.status === 'Selesai') statusClass = 'status-selesai';
           else if (item.status === 'Dibatalkan') statusClass = 'status-dibatalkan';
 
-          const isOnline = item.jenis === 'Daring' && item.statusValidasi === 'Tervalidasi';
+          const isOnline = item.jenis === 'Daring' && item.statusKonfirmasi === 'Terkonfirmasi';
           const hasLaporan = Boolean(item.laporanGuru);
-          const belumValidasi = item.statusValidasi !== 'Tervalidasi' && item.status === 'Proses';
-          const sudahValidasiBelumSelesai = item.statusValidasi === 'Tervalidasi' && item.status === 'Proses';
+          const belumKonfirmasi = item.statusKonfirmasi !== 'Terkonfirmasi' && item.status === 'Proses';
+          const sudahKonfirmasiBelumSelesai = item.statusKonfirmasi === 'Terkonfirmasi' && item.status === 'Proses';
 
           return (
             <tr key={item.id}>
@@ -83,6 +83,11 @@ export default function KonselingTable({
                   <Avatar src={item.fotoSiswa} name={item.namaSiswa} size={32} />
                   <div>
                     <strong>{item.namaSiswa}</strong>
+                    {item.pengajuanSebelumnyaId ? (
+                      <div style={{ fontSize: 11, color: '#1d4ed8', marginTop: 2 }}>
+                        🔗 Lanjutan #{item.pengajuanSebelumnyaId}
+                      </div>
+                    ) : null}
                     {item.inputManual && (
                       <>
                         <br />
@@ -137,8 +142,8 @@ export default function KonselingTable({
               </td>
               <td>{item.tanggal || '-'}</td>
               <td>{item.jam || '-'}</td>
-              <td>{item.tanggalValidasi || '-'}</td>
-              <td>{item.jamValidasi || '-'}</td>
+              <td>{item.tanggalKonfirmasi || '-'}</td>
+              <td>{item.jamKonfirmasi || '-'}</td>
               <td>
                 <span
                   style={{
@@ -161,8 +166,8 @@ export default function KonselingTable({
                 </div>
               </td>
               <td>
-                <span className={`status-badge ${statusValidasiClass}`}>
-                  {item.statusValidasi || 'Belum Divalidasi'}
+                <span className={`status-badge ${statusKonfirmasiClass}`}>
+                  {item.statusKonfirmasi || 'Belum Dikonfirmasi'}
                 </span>
               </td>
               <td>
@@ -182,17 +187,17 @@ export default function KonselingTable({
                   <button className="btn btn-detail" onClick={() => onDetail(item.id)}>
                     <span>📋</span> Detail
                   </button>
-                  {belumValidasi && (
-                    <button className="btn btn-validasi" onClick={() => onValidasi(item.id)}>
-                      <span>✅</span> Validasi
+                  {belumKonfirmasi && (
+                    <button className="btn btn-konfirmasi" onClick={() => onKonfirmasi(item.id)}>
+                      <span>✅</span> Konfirmasi
                     </button>
                   )}
-                  {sudahValidasiBelumSelesai && (
+                  {sudahKonfirmasiBelumSelesai && (
                     <button className="btn btn-laporan" onClick={() => onLaporan(item.id)}>
                       <span>📝</span> Buat Laporan
                     </button>
                   )}
-                  {(belumValidasi || sudahValidasiBelumSelesai) && (
+                  {(belumKonfirmasi || sudahKonfirmasiBelumSelesai) && (
                     <button className="btn btn-batal" onClick={() => onBatal(item.id)}>
                       <span>❌</span> Batal
                     </button>

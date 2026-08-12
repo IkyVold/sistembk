@@ -1,5 +1,5 @@
 // models/siswaModel.js
-// Akses data tabel `siswa` — pure query, tanpa validasi bisnis.
+// Akses data tabel `siswa` — pure query, tanpa logika bisnis.
 const pool = require('../database');
 
 async function findIdByNis(nis) {

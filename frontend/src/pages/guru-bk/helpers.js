@@ -1,3 +1,11 @@
+
+function normalizeStatusKonfirmasi(v) {
+  if (!v) return 'Belum Dikonfirmasi';
+  if (v === 'Tervalidasi' || v === 'Terkonfirmasi') return 'Terkonfirmasi';
+  if (v === 'Belum Divalidasi' || v === 'Belum Dikonfirmasi') return 'Belum Dikonfirmasi';
+  return v;
+}
+
 import { LAPORAN_EDIT_WINDOW_HOURS } from './constants';
 
 // Format tanggal 'YYYY-MM-DD' -> "5 Januari 2026" (sama seperti versi lama)
@@ -67,9 +75,9 @@ export function mapKonselingRow(row, currentGuru) {
     tanggalRaw: row.tanggal,
     tanggal: formatTanggal(row.tanggal),
     jam: row.jam,
-    tanggalValidasi: row.tanggal_validasi ? formatTanggal(row.tanggal_validasi) : formatTanggal(row.tanggal),
-    jamValidasi: row.jam_validasi || row.jam,
-    statusValidasi: row.status_validasi || 'Belum Divalidasi',
+    tanggalKonfirmasi: row.tanggal_konfirmasi ? formatTanggal(row.tanggal_konfirmasi) : formatTanggal(row.tanggal),
+    jamKonfirmasi: row.jam_konfirmasi || row.jam,
+    statusKonfirmasi: normalizeStatusKonfirmasi(row.status_konfirmasi),
     status: row.status || 'Proses',
     jenis: row.jenis,
     kategori: row.kategori,
@@ -94,6 +102,7 @@ export function mapKonselingRow(row, currentGuru) {
       : null,
     laporanCreatedAt: row.laporan_created_at || null,
     canEditLaporan: hasLaporan ? isLaporanMasihBisaEdit(row.laporan_created_at) : false,
+    pengajuanSebelumnyaId: row.pengajuan_sebelumnya_id || null,
   };
 }
 

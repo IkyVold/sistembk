@@ -1,5 +1,5 @@
 // Data akun demo Kepala Sekolah. Sama seperti guruBkList, ini masih
-// divalidasi di client karena backend belum punya endpoint terkait.
+// dikonfirmasi di client karena backend belum punya endpoint terkait.
 // TODO: pindahkan ke backend saat refactor backend berlanjut.
 export const KEPSEK_LIST = [
   {

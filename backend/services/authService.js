@@ -1,5 +1,5 @@
 // services/authService.js
-// Validasi & orkestrasi registrasi/login siswa + proteksi brute-force.
+// Verifikasi & orkestrasi registrasi/login siswa + proteksi brute-force.
 const HttpError = require('../utils/HttpError');
 const siswaModel = require('../models/siswaModel');
 

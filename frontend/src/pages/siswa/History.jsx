@@ -137,8 +137,8 @@ export default function History() {
             <div className="history-grid">
               {history.map((item) => {
                 const hasLaporan = Boolean(item.laporan_kesimpulan || item.laporan);
-                const showValidasiBadge = item.status === 'Proses';
-                const isTervalidasi = item.status_validasi === 'Tervalidasi';
+                const showKonfirmasiBadge = item.status === 'Proses';
+                const isTerkonfirmasi = (item.status_konfirmasi === 'Terkonfirmasi' || item.status_konfirmasi === 'Tervalidasi');
                 const warningNote = item.status === 'Selesai' && !hasLaporan;
 
                 return (
@@ -147,6 +147,22 @@ export default function History() {
                       <div className="history-category">
                         <div className="category-icon">📚</div>
                         Konseling {item.kategori || '—'}
+                        {item.pengajuan_sebelumnya_id ? (
+                          <span
+                            title={`Lanjutan dari sesi #${item.pengajuan_sebelumnya_id}`}
+                            style={{
+                              marginLeft: 8,
+                              fontSize: 11,
+                              background: '#dbeafe',
+                              color: '#1e40af',
+                              padding: '2px 8px',
+                              borderRadius: 999,
+                              fontWeight: 600,
+                            }}
+                          >
+                            🔗 Lanjutan #{item.pengajuan_sebelumnya_id}
+                          </span>
+                        ) : null}
                       </div>
                       <div className="history-date-chip">📅 {item.tanggal || '—'}</div>
                     </div>
@@ -171,16 +187,16 @@ export default function History() {
                     <div className="history-card-footer">
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                         <StatusBadge status={item.status} />
-                        {showValidasiBadge &&
-                          (isTervalidasi ? (
-                            <span className="badge badge-tervalidasi">
+                        {showKonfirmasiBadge &&
+                          (isTerkonfirmasi ? (
+                            <span className="badge badge-terkonfirmasi">
                               <span className="badge-dot" />
-                              Jadwal Tervalidasi
+                              Jadwal Terkonfirmasi
                             </span>
                           ) : (
-                            <span className="badge badge-belumvalidasi">
+                            <span className="badge badge-belumkonfirmasi">
                               <span className="badge-dot" />
-                              Belum Divalidasi
+                              Belum Dikonfirmasi
                             </span>
                           ))}
                         {hasLaporan ? (

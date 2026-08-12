@@ -90,8 +90,8 @@
         .detail-history-page .badge-selesai .badge-dot { background: #1D9E75; }
         .detail-history-page .badge-dibatalkan { background: #FCEBEB; color: #501313; }
         .detail-history-page .badge-dibatalkan .badge-dot { background: #E24B4A; }
-        .detail-history-page .badge-tervalidasi { background: #EEEDFE; color: #3C3489; }
-        .detail-history-page .badge-tervalidasi .badge-dot { background: #534AB7; }
+        .detail-history-page .badge-terkonfirmasi { background: #EEEDFE; color: #3C3489; }
+        .detail-history-page .badge-terkonfirmasi .badge-dot { background: #534AB7; }
         .detail-history-page .badge-belum { background: #F1EFE8; color: #5F5E5A; }
         .detail-history-page .badge-belum .badge-dot { background: #888780; }
 

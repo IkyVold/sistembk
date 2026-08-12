@@ -1,5 +1,5 @@
 // Data akun demo Guru BK. Backend belum punya endpoint /api/login-guru,
-// jadi validasi ini masih dilakukan di sisi client seperti aslinya.
+// jadi konfirmasi ini masih dilakukan di sisi client seperti aslinya.
 // TODO: pindahkan ke backend (tabel guru_bk + endpoint /api/login-guru) saat refactor backend berlanjut.
 export const GURU_BK_LIST = [
   {

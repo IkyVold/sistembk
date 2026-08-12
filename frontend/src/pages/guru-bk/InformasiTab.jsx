@@ -115,7 +115,7 @@ export default function InformasiTab({
                     <td style={{ fontSize: '12px', color: 'var(--ink-500)' }}>{info.guru_bk}</td>
                     <td>
                       <div className="action-buttons">
-                        <button className="btn btn-validasi" onClick={() => onEdit(info)}>
+                        <button className="btn btn-konfirmasi" onClick={() => onEdit(info)}>
                           <span>✏️</span> Edit
                         </button>
                         <button className="btn btn-batal" onClick={() => onHapus(info.id)}>

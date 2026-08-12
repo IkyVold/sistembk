@@ -12,9 +12,9 @@ const SELECT_KONSELING_FULL = `
   k.deskripsi,
   k.kelas_siswa,
   k.status,
-  k.status_validasi,
-  DATE_FORMAT(k.tanggal_validasi, '%Y-%m-%d') AS tanggal_validasi,
-  TIME_FORMAT(k.jam_validasi, '%H:%i') AS jam_validasi,
+  k.status_konfirmasi,
+  DATE_FORMAT(k.tanggal_konfirmasi, '%Y-%m-%d') AS tanggal_konfirmasi,
+  TIME_FORMAT(k.jam_konfirmasi, '%H:%i') AS jam_konfirmasi,
   k.laporan,
   k.laporan_kesimpulan,
   k.laporan_rekomendasi,
@@ -25,6 +25,7 @@ const SELECT_KONSELING_FULL = `
   TIME_FORMAT(k.laporan_waktu, '%H:%i') AS laporan_waktu,
   k.laporan_created_at,
   k.alasan_batal,
+  k.pengajuan_sebelumnya_id,
   k.created_at
 `;
 
@@ -34,11 +35,12 @@ async function runAlter(sql) {
 
 async function insertPengajuan({
   siswaId, guru_bk, tanggal, jam, jenis, kategori, deskripsi, kelasSnapshot,
+  pengajuan_sebelumnya_id = null,
 }) {
   const [result] = await pool.query(
-    `INSERT INTO konseling (siswa_id, guru_bk, tanggal, jam, jenis, kategori, deskripsi, kelas_siswa, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Proses')`,
-    [siswaId, guru_bk, tanggal, jam, jenis, kategori, deskripsi, kelasSnapshot]
+    `INSERT INTO konseling (siswa_id, guru_bk, tanggal, jam, jenis, kategori, deskripsi, kelas_siswa, status, pengajuan_sebelumnya_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Proses', ?)`,
+    [siswaId, guru_bk, tanggal, jam, jenis, kategori, deskripsi, kelasSnapshot, pengajuan_sebelumnya_id]
   );
   return result;
 }
@@ -75,9 +77,9 @@ async function listByGuru(guru) {
   return rows;
 }
 
-async function findForValidasi(id) {
+async function findForKonfirmasi(id) {
   const [rows] = await pool.query(
-    `SELECT k.siswa_id, k.status, k.status_validasi,
+    `SELECT k.siswa_id, k.status, k.status_konfirmasi,
             DATE_FORMAT(k.tanggal, '%Y-%m-%d') AS tanggalLama,
             TIME_FORMAT(k.jam, '%H:%i') AS jamLama
      FROM konseling k WHERE k.id = ?`,
@@ -86,10 +88,10 @@ async function findForValidasi(id) {
   return rows;
 }
 
-async function updateValidasi(id, { tanggal, jam }) {
+async function updateKonfirmasi(id, { tanggal, jam }) {
   const [result] = await pool.query(
     `UPDATE konseling
-     SET tanggal = ?, jam = ?, tanggal_validasi = ?, jam_validasi = ?, status_validasi = 'Tervalidasi'
+     SET tanggal = ?, jam = ?, tanggal_konfirmasi = ?, jam_konfirmasi = ?, status_konfirmasi = 'Terkonfirmasi'
      WHERE id = ? AND status = 'Proses'`,
     [tanggal, jam, tanggal, jam, id]
   );
@@ -162,8 +164,8 @@ async function insertWalkin({
 }) {
   const [result] = await pool.query(
     `INSERT INTO konseling
-      (siswa_id, guru_bk, tanggal, jam, jenis, kategori, deskripsi, kelas_siswa, status, status_validasi, tanggal_validasi, jam_validasi)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Proses', 'Tervalidasi', ?, ?)`,
+      (siswa_id, guru_bk, tanggal, jam, jenis, kategori, deskripsi, kelas_siswa, status, status_konfirmasi, tanggal_konfirmasi, jam_konfirmasi)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Proses', 'Terkonfirmasi', ?, ?)`,
     [siswaId, guru_bk, tanggal, jam, jenis, kategori, deskripsiFinal, kelasSnapshot, tanggal, jam]
   );
   return result;
@@ -215,9 +217,9 @@ async function listBySiswaId(siswaId) {
       deskripsi,
       kelas_siswa,
       status,
-      status_validasi,
-      DATE_FORMAT(tanggal_validasi, '%Y-%m-%d') AS tanggal_validasi,
-      TIME_FORMAT(jam_validasi, '%H:%i') AS jam_validasi,
+      status_konfirmasi,
+      DATE_FORMAT(tanggal_konfirmasi, '%Y-%m-%d') AS tanggal_konfirmasi,
+      TIME_FORMAT(jam_konfirmasi, '%H:%i') AS jam_konfirmasi,
       laporan,
       DATE_FORMAT(laporan_tanggal, '%Y-%m-%d') AS laporan_tanggal,
       TIME_FORMAT(laporan_waktu, '%H:%i') AS laporan_waktu,
@@ -228,6 +230,7 @@ async function listBySiswaId(siswaId) {
       laporan_catatan_tambahan,
       laporan_created_at,
       alasan_batal,
+      pengajuan_sebelumnya_id,
       created_at
      FROM konseling
      WHERE siswa_id = ?
@@ -251,13 +254,58 @@ async function findDetailById(id) {
   return rows;
 }
 
+
+/** Ambil data sesi untuk membuat lanjutan (ownership + status). */
+async function findByIdForLanjutan(id) {
+  const [rows] = await pool.query(
+    `SELECT k.id, k.siswa_id, k.guru_bk, k.jenis, k.kategori, k.deskripsi, k.kelas_siswa, k.status,
+            k.pengajuan_sebelumnya_id,
+            s.nis, s.nama AS nama_siswa
+     FROM konseling k
+     JOIN siswa s ON s.id = k.siswa_id
+     WHERE k.id = ?`,
+    [id]
+  );
+  return rows;
+}
+
+/** Anak langsung dari sebuah sesi (sesi lanjutan). */
+async function findChildrenByParentId(parentId) {
+  const [rows] = await pool.query(
+    `SELECT id, status, status_konfirmasi,
+            DATE_FORMAT(tanggal, '%Y-%m-%d') AS tanggal,
+            TIME_FORMAT(jam, '%H:%i') AS jam,
+            kategori, jenis
+     FROM konseling
+     WHERE pengajuan_sebelumnya_id = ?
+     ORDER BY id ASC`,
+    [parentId]
+  );
+  return rows;
+}
+
+/** Info ringkas parent untuk ditampilkan di detail. */
+async function findParentBrief(parentId) {
+  if (!parentId) return null;
+  const [rows] = await pool.query(
+    `SELECT id, status, status_konfirmasi,
+            DATE_FORMAT(tanggal, '%Y-%m-%d') AS tanggal,
+            TIME_FORMAT(jam, '%H:%i') AS jam,
+            kategori, jenis,
+            laporan_status_penanganan
+     FROM konseling WHERE id = ?`,
+    [parentId]
+  );
+  return rows[0] || null;
+}
+
 module.exports = {
   runAlter,
   insertPengajuan,
   listAll,
   listByGuru,
-  findForValidasi,
-  updateValidasi,
+  findForKonfirmasi,
+  updateKonfirmasi,
   findForStatus,
   updateStatus,
   findLaporanCreatedAt,
@@ -270,4 +318,7 @@ module.exports = {
   deleteById,
   listBySiswaId,
   findDetailById,
+  findByIdForLanjutan,
+  findChildrenByParentId,
+  findParentBrief,
 };
