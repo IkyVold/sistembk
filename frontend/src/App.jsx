@@ -19,6 +19,7 @@ import ChatGuru from './pages/chat/ChatGuru';
 import GuruBkDashboard from './pages/guru-bk/GuruBkDashboard';
 import KepsekDashboard from './pages/kepsek/KepsekDashboard';
 import ComingSoon from './pages/ComingSoon';
+import CetakLaporan from './pages/guru-bk/CetakLaporan';
 
 export default function App() {
   return (
@@ -123,7 +124,8 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="/cetak-laporan" element={<ComingSoon title="Cetak Laporan PDF" />} />
+        {/* Halaman cetak jurnal kerja BK — tidak pakai ProtectedRoute agar window.open bisa baca localStorage */}
+        <Route path="/cetak-laporan" element={<CetakLaporan />} />
         <Route
           path="/dashboard-kepsek"
           element={
