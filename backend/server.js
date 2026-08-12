@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const http = require('http');
 const socketIo = require('socket.io');
 const fs = require('fs');
@@ -29,6 +30,7 @@ const akunRoutes = require('./routes/akunRoutes');
 const notifikasiDispatch = require('./services/notifikasiDispatch');
 const { registerChatSocket } = require('./socket/registerChatSocket');
 const { errorHandler } = require('./middleware/errorHandler');
+const { csrfProtect } = require('./middleware/auth');
 
 const app = express();
 const server = http.createServer(app);
@@ -95,6 +97,8 @@ app.use(cors({
     ],
     credentials: true
 }));
+app.use(cookieParser());
+app.use(csrfProtect);
 app.use(express.json({ limit: '10mb' }));
 
 // Folder penyimpanan file upload (foto profil siswa) — disajikan statis

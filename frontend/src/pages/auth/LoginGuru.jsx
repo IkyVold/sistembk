@@ -50,7 +50,7 @@ export default function LoginGuru() {
   async function handleSubmit(e) {
     e.preventDefault();
     if (!username.trim() || !password) {
-      alert('NIP/Username dan password harus diisi');
+      alert('Username dan password harus diisi');
       return;
     }
 
@@ -75,18 +75,18 @@ export default function LoginGuru() {
 
       <h1 className="auth-title">Login Guru BK</h1>
       <p className="auth-subtitle">
-        Masukkan NIP dan Password untuk
+        Masukkan Username dan Password untuk
         <br />
         mengakses layanan konseling
       </p>
 
       <form className="auth-form" onSubmit={handleSubmit}>
         <div className="auth-field">
-          <label htmlFor="username">NIP</label>
+          <label htmlFor="username">Username</label>
           <input
             type="text"
             id="username"
-            placeholder="Masukan NIP"
+            placeholder="Contoh: joko_bk"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             autoComplete="username"

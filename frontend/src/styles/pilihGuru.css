@@ -203,3 +203,20 @@
   font-size: 1.5rem;
   object-fit: cover;
 }
+
+@media (max-width: 767px) {
+  .pilih-guru-page,
+  body.pilih-guru {
+    padding-bottom: 90px !important;
+  }
+  .guru-grid,
+  .counselor-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    padding: 0 16px !important;
+  }
+  .guru-card,
+  .counselor-card {
+    padding: 16px !important;
+  }
+}

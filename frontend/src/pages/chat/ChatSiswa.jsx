@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import ChatRoom from './ChatRoom';
+import { sessionIdFromKonselingId, parseKonselingIdFromSession } from '../../utils/chatSession';
 
 export default function ChatSiswa() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { siswa } = useAuth();
   const [setup, setSetup] = useState(null); // { sessionId, currentUser, guruName } | 'invalid'
 
@@ -29,8 +31,32 @@ export default function ChatSiswa() {
       type: 'siswa',
     };
 
-    const today = new Date().toISOString().split('T')[0];
-    const sessionId = `session_${currentUser.id}_${guruNama.replace(/\s/g, '_')}_${today}`;
+    // Session harus berbasis konseling_id
+    const konselingId =
+      searchParams.get('konseling') ||
+      localStorage.getItem('currentChatKonselingId') ||
+      localStorage.getItem('lastKonselingId');
+
+    let sessionId =
+      searchParams.get('session') ||
+      localStorage.getItem('currentChatSession');
+
+    if (konselingId) {
+      try {
+        sessionId = sessionIdFromKonselingId(konselingId);
+        localStorage.setItem('currentChatSession', sessionId);
+        localStorage.setItem('currentChatKonselingId', String(konselingId));
+      } catch {
+        sessionId = null;
+      }
+    }
+
+    // Tolak format lama session_NIS_guru_tanggal
+    if (!sessionId || !parseKonselingIdFromSession(sessionId)) {
+      alert('Sesi chat tidak valid. Buka chat dari detail konseling yang sudah dikonfirmasi.');
+      navigate('/history');
+      return;
+    }
 
     setSetup({ sessionId, currentUser, guruName: guruNama });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -43,11 +69,11 @@ export default function ChatSiswa() {
       sessionId={setup.sessionId}
       currentUser={setup.currentUser}
       headerTitle={`Konseling dengan ${setup.guruName}`}
-      headerSubtitleHtml={`<strong>${setup.guruName}</strong>`}
+      headerSubtitle={setup.guruName}
       avatarName={setup.guruName}
       backHref="/"
       backLabel="Kembali"
-      infoBannerDefaultHtml="🔒 Percakapan bersifat rahasia — hanya kamu dan Guru BK yang bisa melihatnya"
+      infoBannerDefault="🔒 Percakapan bersifat rahasia — hanya kamu dan Guru BK yang bisa melihatnya"
     />
   );
 }

@@ -148,7 +148,47 @@ async function initMigrations() {
       console.warn('⚠️ Index parent (boleh diabaikan):', err.message);
     }
   }
+
+  // guru_id FK — relasi stabil ke akun Guru BK (nama bisa berubah)
+  try {
+    await konselingModel.runAlter(
+      `ALTER TABLE konseling ADD COLUMN guru_id INT NULL DEFAULT NULL AFTER siswa_id`
+    );
+    console.log('✅ Kolom guru_id ditambahkan ke tabel konseling');
+  } catch (err) {
+    if (err.code !== 'ER_DUP_FIELDNAME') {
+      console.error('❌ Error migrasi kolom guru_id:', err.message);
+    }
+  }
+  try {
+    await konselingModel.runAlter(
+      `CREATE INDEX idx_konseling_guru_id ON konseling (guru_id)`
+    );
+  } catch (err) {
+    if (err.code !== 'ER_DUP_KEYNAME' && err.code !== 'ER_DUP_FIELDNAME') {
+      console.warn('⚠️ Index guru_id:', err.message);
+    }
+  }
+  // Backfill dari nama (data lama)
+  try {
+    await konselingModel.runAlter(`
+      UPDATE konseling k
+      INNER JOIN guru_bk g ON g.nama = k.guru_bk
+      SET k.guru_id = g.id
+      WHERE k.guru_id IS NULL AND k.guru_bk IS NOT NULL AND k.guru_bk <> ''
+    `);
+    await konselingModel.runAlter(`
+      UPDATE konseling k
+      INNER JOIN guru_bk g ON LOWER(TRIM(g.nama)) = LOWER(TRIM(k.guru_bk))
+      SET k.guru_id = g.id
+      WHERE k.guru_id IS NULL AND k.guru_bk IS NOT NULL AND k.guru_bk <> ''
+    `);
+    console.log('✅ Backfill guru_id dari nama selesai');
+  } catch (err) {
+    console.warn('⚠️ Backfill guru_id:', err.message);
+  }
 }
+
 
 async function resolveKelasSnapshot(nis, fallbackKelas) {
   let kelasSnapshot = fallbackKelas || '-';
@@ -163,12 +203,50 @@ async function resolveKelasSnapshot(nis, fallbackKelas) {
   return kelasSnapshot;
 }
 
-/** POST /api/konseling — pengajuan baru oleh siswa. */
-async function createPengajuan(body) {
-  const { nis, guru_bk, guru_username, tanggal, jam, jenis, kategori, deskripsi } = body;
 
-  if (!nis || !guru_bk || !tanggal || !jam || !jenis || !kategori || !deskripsi) {
-    throw new HttpError(400, 'Semua field harus diisi');
+/** Pastikan user berhak mengakses/mengubah record konseling. */
+function assertCanAccessKonseling(row, user, { mutate = false } = {}) {
+  if (!user) throw new HttpError(401, 'Autentikasi diperlukan');
+  if (user.role === 'admin' || user.role === 'kepsek') return;
+
+  if (user.role === 'siswa') {
+    const userNis = String(user.nis || '');
+    const rowNis = String(row.nis || '');
+    // juga cocokkan siswa_id jika ada
+    if (rowNis && userNis && rowNis === userNis) return;
+    if (row.siswa_id != null && user.id != null && Number(row.siswa_id) === Number(user.id)) return;
+    throw new HttpError(403, 'Anda hanya dapat mengakses konseling milik sendiri');
+  }
+
+  if (user.role === 'guru') {
+    // Prioritas: guru_id (stabil). Fallback: nama untuk data lama.
+    if (user.id != null && row.guru_id != null && Number(user.id) === Number(row.guru_id)) {
+      return;
+    }
+    const guruNama = String(user.nama || '').trim();
+    const rowGuru = String(row.guru_bk || row.guru || '').trim();
+    if (guruNama && rowGuru && guruNama === rowGuru) return;
+    throw new HttpError(403, 'Anda hanya dapat mengakses konseling yang Anda tangani');
+  }
+
+  throw new HttpError(403, 'Akses ditolak');
+}
+
+/** POST /api/konseling — pengajuan baru oleh siswa. */
+async function createPengajuan(body, user) {
+  const { guru_bk, guru_username, guru_id: guruIdBody, tanggal, jam, jenis, kategori, deskripsi } = body;
+
+  // NIS selalu dari JWT — siswa tidak boleh mengajukan atas nama orang lain
+  if (!user || user.role !== 'siswa') {
+    throw new HttpError(403, 'Hanya siswa yang dapat mengajukan konseling');
+  }
+  const nis = String(user.nis || '').trim();
+  if (!nis) {
+    throw new HttpError(401, 'Sesi siswa tidak valid');
+  }
+
+  if ((!guru_bk && !guruIdBody) || !tanggal || !jam || !jenis || !kategori || !deskripsi) {
+    throw new HttpError(400, 'Semua field harus diisi (guru, jadwal, kategori, deskripsi)');
   }
   if (deskripsi.trim().length < 20) {
     throw new HttpError(400, 'Deskripsi minimal 20 karakter');
@@ -176,6 +254,25 @@ async function createPengajuan(body) {
   if (!['Luring', 'Daring'].includes(jenis)) {
     throw new HttpError(400, 'Jenis konseling tidak valid');
   }
+
+  // Resolve Guru BK → guru_id stabil
+  let resolvedGuru = null;
+  if (guruIdBody) {
+    const byId = await guruBkModel.findById(guruIdBody);
+    if (byId.length) resolvedGuru = byId[0];
+  }
+  if (!resolvedGuru && guru_bk) {
+    const byNama = await guruBkModel.findByNama(guru_bk);
+    if (byNama.length) resolvedGuru = byNama[0];
+  }
+  if (!resolvedGuru) {
+    throw new HttpError(400, 'Guru BK tidak ditemukan');
+  }
+  if (resolvedGuru.is_active === 0 || resolvedGuru.is_active === false) {
+    throw new HttpError(400, 'Guru BK tidak aktif / tidak menerima pengajuan');
+  }
+  const guruId = resolvedGuru.id;
+  const guruNamaResolved = resolvedGuru.nama;
 
   const siswaRows = await siswaModel.findIdAndKelasByNis(nis);
   if (siswaRows.length === 0) {
@@ -185,15 +282,18 @@ async function createPengajuan(body) {
   const kelasSnapshot = await resolveKelasSnapshot(nis, siswaRows[0].kelas);
 
   const result = await konselingModel.insertPengajuan({
-    siswaId, guru_bk, tanggal, jam, jenis, kategori,
+    siswaId,
+    guru_id: guruId,
+    guru_bk: guruNamaResolved,
+    tanggal, jam, jenis, kategori,
     deskripsi: deskripsi.trim(), kelasSnapshot,
   });
 
   // Notifikasi ke Guru BK: pengajuan baru
   try {
-    let guruUsername = (guru_username && String(guru_username).trim()) || null;
+    let guruUsername = (guru_username && String(guru_username).trim()) || resolvedGuru.username || null;
     if (!guruUsername) {
-      guruUsername = await resolveGuruUsernameByNama(guru_bk);
+      guruUsername = await resolveGuruUsernameByNama(guruNamaResolved);
     }
     console.log(
       `ℹ️  [notif-guru] pengajuan id=${result.insertId} guru_bk="${guru_bk}" username=${guruUsername || '(tidak ketemu)'}`
@@ -221,16 +321,24 @@ async function listAll() {
   return konselingModel.listAll();
 }
 
-/** GET /api/konseling-bk?guru= — sesi milik satu Guru BK. */
-async function listByGuru(guru) {
-  if (!guru) {
+/** GET /api/konseling-bk — sesi milik Guru BK yang login (nama dari JWT). */
+async function listByGuru(guruFromQuery, user) {
+  if (user && user.role === 'guru') {
+    // Selalu dari JWT — jangan percaya query client
+    return konselingModel.listByGuru({
+      guruId: user.id,
+      guruNama: user.nama,
+    });
+  }
+  // Admin / kepsek boleh filter by nama dari query
+  if (!guruFromQuery) {
     throw new HttpError(400, 'Parameter guru wajib diisi');
   }
-  return konselingModel.listByGuru(guru);
+  return konselingModel.listByGuru({ guruNama: guruFromQuery });
 }
 
 /** PUT /api/konseling/:id/konfirmasi — tetapkan/ubah jadwal + notifikasi. */
-async function konfirmasi(id, { tanggal, jam }) {
+async function konfirmasi(id, { tanggal, jam }, user) {
   if (!tanggal || !jam) {
     throw new HttpError(400, 'Tanggal dan jam konfirmasi wajib diisi');
   }
@@ -240,6 +348,7 @@ async function konfirmasi(id, { tanggal, jam }) {
     throw new HttpError(404, 'Data konseling tidak ditemukan');
   }
   const existing = existingRows[0];
+  assertCanAccessKonseling(existing, user, { mutate: true });
 
   // Guard: tidak boleh konfirmasi sesi yang sudah Selesai / Dibatalkan
   if (existing.status !== 'Proses') {
@@ -247,6 +356,18 @@ async function konfirmasi(id, { tanggal, jam }) {
       400,
       `Konseling berstatus "${existing.status}" tidak dapat dikonfirmasi. Hanya pengajuan berstatus Proses yang boleh dikonfirmasi atau diubah jadwalnya.`
     );
+  }
+
+  // Cegah double-booking slot guru
+  const bentrok = await konselingModel.countJadwalBentrok({
+    guru_id: existing.guru_id,
+    guru_bk: existing.guru_bk,
+    tanggal,
+    jam,
+    excludeId: id,
+  });
+  if (bentrok > 0) {
+    throw new HttpError(409, 'Jadwal bentrok dengan sesi konseling lain pada tanggal/jam yang sama');
   }
 
   const result = await konselingModel.updateKonfirmasi(id, { tanggal, jam });
@@ -283,9 +404,10 @@ async function konfirmasi(id, { tanggal, jam }) {
 }
 
 /** PUT /api/konseling/:id/status — ubah status (mis. Dibatalkan). */
-async function updateStatus(id, status) {
-  if (!['Proses', 'Selesai', 'Dibatalkan'].includes(status)) {
-    throw new HttpError(400, 'Status tidak valid');
+async function updateStatus(id, status, user) {
+  // Hanya izinkan pembatalan lewat endpoint ini — Selesai harus lewat laporan
+  if (!['Dibatalkan'].includes(status)) {
+    throw new HttpError(400, 'Status tidak valid. Gunakan endpoint laporan untuk menyelesaikan sesi.');
   }
 
   const existingRows = await konselingModel.findForStatus(id);
@@ -293,6 +415,7 @@ async function updateStatus(id, status) {
     throw new HttpError(404, 'Data konseling tidak ditemukan');
   }
   const existing = existingRows[0];
+  assertCanAccessKonseling(existing, user, { mutate: true });
 
   // Guard: status final tidak boleh diubah lagi
   if (existing.status === 'Selesai' || existing.status === 'Dibatalkan') {
@@ -302,7 +425,6 @@ async function updateStatus(id, status) {
     );
   }
 
-  // Dari Proses: izinkan ke Dibatalkan (utama). Set Selesai idealnya lewat laporan.
   if (status === existing.status) {
     return { message: 'Status tidak berubah' };
   }
@@ -329,11 +451,21 @@ async function updateStatus(id, status) {
 /** PUT /api/konseling/:id/laporan — simpan laporan & set status Selesai. */
 const LAPORAN_EDIT_WINDOW_HOURS = 72; // 3 x 24 jam
 
-async function simpanLaporan(id, body) {
-  const { kesimpulan, rekomendasi, statusPenanganan, catatanTambahan, dibuatOleh } = body;
+async function simpanLaporan(id, body, user) {
+  const { kesimpulan, rekomendasi, statusPenanganan, catatanTambahan } = body;
   if (!kesimpulan || !rekomendasi) {
     throw new HttpError(400, 'Kesimpulan dan rekomendasi wajib diisi');
   }
+
+  // Ownership: guru hanya boleh laporan konseling miliknya
+  const ownRows = await konselingModel.findForStatus(id);
+  if (ownRows.length === 0) {
+    throw new HttpError(404, 'Data konseling tidak ditemukan');
+  }
+  assertCanAccessKonseling(ownRows[0], user, { mutate: true });
+
+  // Identitas pembuat dari JWT, bukan body client
+  const dibuatOleh = (user && (user.nama || user.username)) || 'Guru BK';
 
   const rows = await konselingModel.findLaporanCreatedAt(id);
   if (rows.length === 0) {
@@ -361,19 +493,29 @@ async function simpanLaporan(id, body) {
     return { message: 'Laporan berhasil diperbarui', edited: true };
   }
 
-  await konselingModel.updateLaporanFirst(id, {
+  const firstResult = await konselingModel.updateLaporanFirst(id, {
     kesimpulan: kesimpulan.trim(),
     rekomendasi: rekomendasi.trim(),
     statusPenanganan: statusPenanganan || 'Selesai - Masalah Teratasi',
     catatanTambahan: (catatanTambahan || '').trim() || '-',
-    dibuatOleh: dibuatOleh || 'Guru BK',
+    dibuatOleh,
   });
+  if (!firstResult || firstResult.affectedRows === 0) {
+    throw new HttpError(
+      400,
+      'Laporan hanya dapat disimpan untuk sesi berstatus Proses yang sudah dikonfirmasi'
+    );
+  }
   return { message: 'Laporan berhasil disimpan', edited: false };
 }
 
 /** POST /api/konseling/walkin — input manual Guru BK. */
-async function createWalkin(body) {
-  const { nis, guru_bk, tanggal, jam, jenis, kategori, deskripsi, catatan } = body;
+async function createWalkin(body, user) {
+  const { nis, tanggal, jam, jenis, kategori, deskripsi, catatan } = body;
+  const guru_bk = (user && user.role === 'guru' && user.nama) ? user.nama : body.guru_bk;
+  if (user && user.role === 'guru' && body.guru_bk && String(body.guru_bk) !== String(user.nama)) {
+    throw new HttpError(403, 'Anda tidak dapat mencatat walk-in atas nama guru lain');
+  }
   if (!nis || !guru_bk || !tanggal || !jam || !jenis || !kategori || !deskripsi) {
     throw new HttpError(400, 'Semua field wajib diisi');
   }
@@ -392,12 +534,21 @@ async function createWalkin(body) {
     console.warn('Gagal ambil kelas aktif untuk walk-in, pakai siswa.kelas:', e.message);
   }
 
-  const deskripsiFinal = catatan && catatan.trim()
-    ? deskripsi.trim() + '\n\nCatatan tambahan: ' + catatan.trim()
-    : deskripsi.trim();
+  // Deskripsi tetap murni; catatan walk-in disimpan di kolom khusus
+  const deskripsiClean = deskripsi.trim();
+  const catatanWalkin = (catatan && String(catatan).trim()) || null;
 
   const result = await konselingModel.insertWalkin({
-    siswaId, guru_bk, tanggal, jam, jenis, kategori, deskripsiFinal, kelasSnapshot,
+    siswaId,
+    guru_id: (user && user.role === 'guru') ? user.id : null,
+    guru_bk,
+    tanggal,
+    jam,
+    jenis,
+    kategori,
+    deskripsi: deskripsiClean,
+    kelasSnapshot,
+    catatanWalkin,
   });
 
   return {
@@ -407,13 +558,22 @@ async function createWalkin(body) {
 }
 
 /** DELETE /api/konseling/:id — batalkan pengajuan (hanya status Proses). Hard delete untuk "Konsul Ulang". */
-async function batalkan(id) {
-  const rows = await konselingModel.findStatusById(id);
+async function batalkan(id, user) {
+  // Gunakan data lengkap untuk ownership
+  const rows = await konselingModel.findForStatus(id);
   if (rows.length === 0) {
     throw new HttpError(404, 'Data konseling tidak ditemukan');
   }
+  assertCanAccessKonseling(rows[0], user, { mutate: true });
   if (rows[0].status !== 'Proses') {
     throw new HttpError(400, 'Hanya pengajuan berstatus Proses yang bisa dibatalkan');
+  }
+  // Siswa: soft-cancel lebih aman via batalkanOlehSiswa. Hard delete hanya staff.
+  if (user && user.role === 'siswa') {
+    throw new HttpError(
+      400,
+      'Siswa harus membatalkan lewat endpoint batal-siswa (dengan alasan)'
+    );
   }
   await konselingModel.deleteById(id);
   return { message: 'Pengajuan konseling berhasil dibatalkan' };
@@ -503,6 +663,7 @@ async function createLanjutan(body, user) {
     throw new HttpError(404, 'Sesi sebelumnya tidak ditemukan');
   }
   const parent = parentRows[0];
+  assertCanAccessKonseling(parent, user, { mutate: true });
 
   // Hanya boleh dari sesi yang sudah Selesai (laporan sudah ada)
   if (parent.status !== 'Selesai') {
@@ -516,7 +677,15 @@ async function createLanjutan(body, user) {
   const kategoriFinal = (kategori && String(kategori).trim()) || parent.kategori || 'Lainnya';
   const deskripsiFinal = (deskripsi && String(deskripsi).trim())
     || `Sesi lanjutan dari konseling #${parentId}. ${parent.deskripsi ? parent.deskripsi.substring(0, 200) : ''}`.trim();
-  const guruFinal = (guru_bk && String(guru_bk).trim()) || parent.guru_bk;
+  // Guru yang login = penanggung jawab (id + nama snapshot)
+  let guruIdFinal = parent.guru_id || null;
+  let guruFinal = parent.guru_bk;
+  if (user && user.role === 'guru') {
+    guruIdFinal = user.id;
+    guruFinal = user.nama || guruFinal;
+  } else if (guru_bk && String(guru_bk).trim()) {
+    guruFinal = String(guru_bk).trim();
+  }
 
   if (deskripsiFinal.length < 20) {
     throw new HttpError(400, 'Deskripsi minimal 20 karakter');
@@ -524,6 +693,7 @@ async function createLanjutan(body, user) {
 
   const result = await konselingModel.insertPengajuan({
     siswaId: parent.siswa_id,
+    guru_id: guruIdFinal,
     guru_bk: guruFinal,
     tanggal,
     jam,
@@ -565,12 +735,13 @@ async function listByNis(nis) {
 }
 
 /** GET /api/konseling/detail/:id — termasuk info parent & anak (rantai sesi). */
-async function getDetail(id) {
+async function getDetail(id, user) {
   const rows = await konselingModel.findDetailById(id);
   if (rows.length === 0) {
     throw new HttpError(404, 'Data konseling tidak ditemukan');
   }
   const row = rows[0];
+  assertCanAccessKonseling(row, user, { mutate: false });
   const parent = row.pengajuan_sebelumnya_id
     ? await konselingModel.findParentBrief(row.pengajuan_sebelumnya_id)
     : null;

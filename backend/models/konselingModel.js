@@ -4,7 +4,9 @@ const pool = require('../database');
 
 const SELECT_KONSELING_FULL = `
   k.id,
-  k.guru_bk AS guru,
+  k.guru_id,
+  COALESCE(g.nama, k.guru_bk) AS guru,
+  k.guru_bk AS guru_bk_snapshot,
   DATE_FORMAT(k.tanggal, '%Y-%m-%d') AS tanggal,
   TIME_FORMAT(k.jam, '%H:%i') AS jam,
   k.jenis,
@@ -26,6 +28,8 @@ const SELECT_KONSELING_FULL = `
   k.laporan_created_at,
   k.alasan_batal,
   k.pengajuan_sebelumnya_id,
+  k.input_manual,
+  k.catatan_walkin,
   k.created_at
 `;
 
@@ -34,13 +38,13 @@ async function runAlter(sql) {
 }
 
 async function insertPengajuan({
-  siswaId, guru_bk, tanggal, jam, jenis, kategori, deskripsi, kelasSnapshot,
+  siswaId, guru_id, guru_bk, tanggal, jam, jenis, kategori, deskripsi, kelasSnapshot,
   pengajuan_sebelumnya_id = null,
 }) {
   const [result] = await pool.query(
-    `INSERT INTO konseling (siswa_id, guru_bk, tanggal, jam, jenis, kategori, deskripsi, kelas_siswa, status, pengajuan_sebelumnya_id)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Proses', ?)`,
-    [siswaId, guru_bk, tanggal, jam, jenis, kategori, deskripsi, kelasSnapshot, pengajuan_sebelumnya_id]
+    `INSERT INTO konseling (siswa_id, guru_id, guru_bk, tanggal, jam, jenis, kategori, deskripsi, kelas_siswa, status, pengajuan_sebelumnya_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Proses', ?)`,
+    [siswaId, guru_id || null, guru_bk, tanggal, jam, jenis, kategori, deskripsi, kelasSnapshot, pengajuan_sebelumnya_id]
   );
   return result;
 }
@@ -56,12 +60,25 @@ async function listAll() {
       s.alamat
      FROM konseling k
      JOIN siswa s ON s.id = k.siswa_id
+     LEFT JOIN guru_bk g ON g.id = k.guru_id
      ORDER BY k.tanggal DESC, k.jam DESC, k.id DESC`
   );
   return rows;
 }
 
-async function listByGuru(guru) {
+/** List by guru_id (preferred) with fallback nama untuk data lama. */
+async function listByGuru({ guruId = null, guruNama = null } = {}) {
+  const params = [];
+  let where;
+  if (guruId) {
+    where = '(k.guru_id = ? OR (k.guru_id IS NULL AND k.guru_bk = ?))';
+    params.push(guruId, guruNama || '');
+  } else if (guruNama) {
+    where = '(k.guru_bk = ? OR g.nama = ?)';
+    params.push(guruNama, guruNama);
+  } else {
+    throw new Error('guruId atau guruNama wajib');
+  }
   const [rows] = await pool.query(
     `SELECT
       ${SELECT_KONSELING_FULL},
@@ -70,19 +87,23 @@ async function listByGuru(guru) {
       s.foto_profile AS foto_siswa
      FROM konseling k
      JOIN siswa s ON s.id = k.siswa_id
-     WHERE k.guru_bk = ?
+     LEFT JOIN guru_bk g ON g.id = k.guru_id
+     WHERE ${where}
      ORDER BY k.tanggal DESC, k.jam DESC, k.id DESC`,
-    [guru]
+    params
   );
   return rows;
 }
 
 async function findForKonfirmasi(id) {
   const [rows] = await pool.query(
-    `SELECT k.siswa_id, k.status, k.status_konfirmasi,
+    `SELECT k.id, k.siswa_id, k.guru_id, k.guru_bk, k.status, k.status_konfirmasi,
             DATE_FORMAT(k.tanggal, '%Y-%m-%d') AS tanggalLama,
-            TIME_FORMAT(k.jam, '%H:%i') AS jamLama
-     FROM konseling k WHERE k.id = ?`,
+            TIME_FORMAT(k.jam, '%H:%i') AS jamLama,
+            s.nis
+     FROM konseling k
+     JOIN siswa s ON s.id = k.siswa_id
+     WHERE k.id = ?`,
     [id]
   );
   return rows;
@@ -100,10 +121,13 @@ async function updateKonfirmasi(id, { tanggal, jam }) {
 
 async function findForStatus(id) {
   const [rows] = await pool.query(
-    `SELECT siswa_id, status,
-            DATE_FORMAT(tanggal, '%Y-%m-%d') AS tanggal,
-            TIME_FORMAT(jam, '%H:%i') AS jam
-     FROM konseling WHERE id = ?`,
+    `SELECT k.id, k.siswa_id, k.guru_id, k.guru_bk, k.status, k.status_konfirmasi, k.jenis,
+            DATE_FORMAT(k.tanggal, '%Y-%m-%d') AS tanggal,
+            TIME_FORMAT(k.jam, '%H:%i') AS jam,
+            s.nis
+     FROM konseling k
+     JOIN siswa s ON s.id = k.siswa_id
+     WHERE k.id = ?`,
     [id]
   );
   return rows;
@@ -143,7 +167,7 @@ async function updateLaporanEdit(id, {
 async function updateLaporanFirst(id, {
   kesimpulan, rekomendasi, statusPenanganan, catatanTambahan, dibuatOleh,
 }) {
-  await pool.query(
+  const [result] = await pool.query(
     `UPDATE konseling
      SET laporan_kesimpulan = ?,
          laporan_rekomendasi = ?,
@@ -154,19 +178,28 @@ async function updateLaporanFirst(id, {
          laporan_waktu = CURTIME(),
          laporan_created_at = NOW(),
          status = 'Selesai'
-     WHERE id = ?`,
+     WHERE id = ? AND status = 'Proses' AND status_konfirmasi = 'Terkonfirmasi'`,
     [kesimpulan, rekomendasi, statusPenanganan, catatanTambahan, dibuatOleh, id]
   );
+  return result;
 }
 
 async function insertWalkin({
-  siswaId, guru_bk, tanggal, jam, jenis, kategori, deskripsiFinal, kelasSnapshot,
+  siswaId, guru_id, guru_bk, tanggal, jam, jenis, kategori, deskripsi, kelasSnapshot, catatanWalkin,
 }) {
   const [result] = await pool.query(
     `INSERT INTO konseling
-      (siswa_id, guru_bk, tanggal, jam, jenis, kategori, deskripsi, kelas_siswa, status, status_konfirmasi, tanggal_konfirmasi, jam_konfirmasi)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Proses', 'Terkonfirmasi', ?, ?)`,
-    [siswaId, guru_bk, tanggal, jam, jenis, kategori, deskripsiFinal, kelasSnapshot, tanggal, jam]
+      (siswa_id, guru_id, guru_bk, tanggal, jam, jenis, kategori, deskripsi, kelas_siswa,
+       status, status_konfirmasi, tanggal_konfirmasi, jam_konfirmasi,
+       input_manual, catatan_walkin)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,
+             'Proses', 'Terkonfirmasi', ?, ?,
+             1, ?)`,
+    [
+      siswaId, guru_id || null, guru_bk, tanggal, jam, jenis, kategori, deskripsi, kelasSnapshot,
+      tanggal, jam,
+      catatanWalkin || null,
+    ]
   );
   return result;
 }
@@ -179,7 +212,7 @@ async function findStatusById(id) {
 /** Data untuk pembatalan oleh siswa: cek ownership + status. */
 async function findForBatalkanSiswa(id) {
   const [rows] = await pool.query(
-    `SELECT k.id, k.siswa_id, k.status, k.guru_bk,
+    `SELECT k.id, k.siswa_id, k.guru_id, k.status, k.guru_bk,
             DATE_FORMAT(k.tanggal, '%Y-%m-%d') AS tanggal,
             TIME_FORMAT(k.jam, '%H:%i') AS jam,
             s.nis, s.nama AS nama_siswa
@@ -231,6 +264,8 @@ async function listBySiswaId(siswaId) {
       laporan_created_at,
       alasan_batal,
       pengajuan_sebelumnya_id,
+      input_manual,
+      catatan_walkin,
       created_at
      FROM konseling
      WHERE siswa_id = ?
@@ -248,6 +283,7 @@ async function findDetailById(id) {
       s.nama AS nama_siswa
      FROM konseling k
      JOIN siswa s ON s.id = k.siswa_id
+     LEFT JOIN guru_bk g ON g.id = k.guru_id
      WHERE k.id = ?`,
     [id]
   );
@@ -258,7 +294,7 @@ async function findDetailById(id) {
 /** Ambil data sesi untuk membuat lanjutan (ownership + status). */
 async function findByIdForLanjutan(id) {
   const [rows] = await pool.query(
-    `SELECT k.id, k.siswa_id, k.guru_bk, k.jenis, k.kategori, k.deskripsi, k.kelas_siswa, k.status,
+    `SELECT k.id, k.siswa_id, k.guru_id, k.guru_bk, k.jenis, k.kategori, k.deskripsi, k.kelas_siswa, k.status,
             k.pengajuan_sebelumnya_id,
             s.nis, s.nama AS nama_siswa
      FROM konseling k
@@ -299,6 +335,28 @@ async function findParentBrief(parentId) {
   return rows[0] || null;
 }
 
+
+/** Cek bentrok jadwal guru (exclude id tertentu, exclude Dibatalkan). */
+async function countJadwalBentrok({ guru_id = null, guru_bk = null, tanggal, jam, excludeId = null }) {
+  let sql = `SELECT COUNT(*) AS cnt FROM konseling
+    WHERE tanggal = ? AND jam = ?
+      AND status <> 'Dibatalkan'`;
+  const params = [tanggal, jam];
+  if (guru_id) {
+    sql += ' AND (guru_id = ? OR (guru_id IS NULL AND guru_bk = ?))';
+    params.push(guru_id, guru_bk || '');
+  } else {
+    sql += ' AND guru_bk = ?';
+    params.push(guru_bk);
+  }
+  if (excludeId) {
+    sql += ' AND id <> ?';
+    params.push(excludeId);
+  }
+  const [rows] = await pool.query(sql, params);
+  return rows[0].cnt;
+}
+
 module.exports = {
   runAlter,
   insertPengajuan,
@@ -318,6 +376,7 @@ module.exports = {
   deleteById,
   listBySiswaId,
   findDetailById,
+  countJadwalBentrok,
   findByIdForLanjutan,
   findChildrenByParentId,
   findParentBrief,

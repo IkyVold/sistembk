@@ -2,7 +2,9 @@
 // Handler Socket.IO chat real-time + join room notifikasi siswa.
 // Logika disalin dari server.js asli — event names, payload, dan alur tidak diubah.
 const chatService = require('../services/chatService');
-const { verifyToken } = require('../middleware/auth');
+const { verifyToken, extractTokenFromSocket } = require('../middleware/auth');
+const { parseKonselingIdFromSession } = require('../utils/chatSession');
+const konselingModel = require('../models/konselingModel');
 
 /**
  * Daftarkan semua handler chat pada instance Socket.IO.
@@ -19,8 +21,7 @@ function registerChatSocket(io) {
     io.use((socket, next) => {
         try {
             const token =
-                socket.handshake.auth?.token ||
-                socket.handshake.query?.token ||
+                extractTokenFromSocket(socket) ||
                 (socket.handshake.headers?.authorization || '').replace(/^Bearer\s+/i, '');
             if (!token) {
                 return next(new Error('Autentikasi Socket.IO diperlukan'));
@@ -40,10 +41,13 @@ function registerChatSocket(io) {
         let currentUserType = null;
 
         // Join room notifikasi pribadi siswa (dipakai untuk badge & panel riwayat notifikasi jadwal)
-        socket.on('join-siswa-notif', (data) => {
+        socket.on('join-siswa-notif', () => {
             try {
-                const nis = typeof data === 'string' ? data : data?.nis;
-                if (!nis) return;
+                // NIS hanya dari JWT — jangan terima dari client
+                if (!socket.user || socket.user.role !== 'siswa' || !socket.user.nis) {
+                    return;
+                }
+                const nis = String(socket.user.nis);
                 socket.join(`siswa-notif-${nis}`);
                 console.log(`📌 Siswa NIS ${nis} join room notifikasi (socket: ${socket.id})`);
             } catch (error) {
@@ -52,15 +56,13 @@ function registerChatSocket(io) {
         });
 
         // Join room notifikasi Guru BK
-        socket.on('join-guru-notif', (data) => {
+        socket.on('join-guru-notif', () => {
             try {
-                const username = typeof data === 'string' ? data : data?.username;
-                if (!username) return;
-                // Hanya izinkan join room milik sendiri
-                if (socket.user?.role === 'guru' && String(socket.user.username) !== String(username)) {
-                    console.warn(`⚠️  Guru ${socket.user.username} mencoba join room ${username} — ditolak`);
+                // Hanya guru — room dari JWT username, bukan client
+                if (!socket.user || socket.user.role !== 'guru' || !socket.user.username) {
                     return;
                 }
+                const username = String(socket.user.username);
                 socket.join(`guru-notif-${username}`);
                 console.log(`📌 Guru ${username} join room notifikasi (socket: ${socket.id})`);
             } catch (error) {
@@ -74,7 +76,7 @@ function registerChatSocket(io) {
                 const { userId, userType, sessionId, userName } = data;
 
                 if (!sessionId) {
-                    console.error('No sessionId provided');
+                    socket.emit('error', { message: 'sessionId wajib' });
                     return;
                 }
 
@@ -82,41 +84,99 @@ function registerChatSocket(io) {
                     socket.emit('error', { message: 'Autentikasi diperlukan' });
                     return;
                 }
-                if (socket.user.role === 'siswa') {
-                    const uid = String(userId);
-                    if (uid !== String(socket.user.nis) && uid !== String(socket.user.id)) {
-                        socket.emit('error', { message: 'Identitas chat tidak sesuai sesi login' });
-                        return;
-                    }
+
+                // Session harus format konseling_<id>
+                const konselingId = parseKonselingIdFromSession(sessionId);
+                if (!konselingId) {
+                    socket.emit('error', {
+                        message: 'Format sesi chat tidak valid. Gunakan sesi berbasis konseling_id.',
+                    });
+                    return;
                 }
 
+                // Otorisasi: user harus pemilik / guru penanggung jawab, jenis Daring
+                const rows = await konselingModel.findForStatus(konselingId);
+                if (!rows.length) {
+                    socket.emit('error', { message: 'Data konseling tidak ditemukan' });
+                    return;
+                }
+                const k = rows[0];
+
+                if (String(k.jenis) !== 'Daring') {
+                    socket.emit('error', { message: 'Chat hanya untuk konseling daring' });
+                    return;
+                }
+                if (k.status === 'Dibatalkan') {
+                    socket.emit('error', { message: 'Konseling ini sudah dibatalkan' });
+                    return;
+                }
+
+                if (socket.user.role === 'siswa') {
+                    const ok =
+                        String(k.nis) === String(socket.user.nis) ||
+                        Number(k.siswa_id) === Number(socket.user.id);
+                    if (!ok) {
+                        socket.emit('error', { message: 'Anda tidak berhak masuk chat konseling ini' });
+                        return;
+                    }
+                } else if (socket.user.role === 'guru') {
+                    const byId =
+                      k.guru_id != null &&
+                      socket.user.id != null &&
+                      Number(k.guru_id) === Number(socket.user.id);
+                    const byNama =
+                      String(k.guru_bk || '').trim() === String(socket.user.nama || '').trim();
+                    if (!byId && !byNama) {
+                        socket.emit('error', { message: 'Anda tidak berhak masuk chat konseling ini' });
+                        return;
+                    }
+                } else if (socket.user.role !== 'admin') {
+                    socket.emit('error', { message: 'Role tidak diizinkan untuk chat konseling' });
+                    return;
+                }
+
+                // Catat session registry (idempotent)
+                try {
+                    await chatService.ensureChatSession(sessionId, konselingId);
+                } catch (e) {
+                    console.warn('ensureChatSession:', e.message);
+                }
+
+                // Identitas dari JWT, bukan payload client
+                const safeUserType = socket.user.role === 'guru' ? 'guru' : 'siswa';
+                const safeUserId =
+                    safeUserType === 'siswa'
+                        ? String(socket.user.nis || socket.user.id)
+                        : String(socket.user.username || socket.user.id);
+                const safeUserName = String(socket.user.nama || safeUserId);
+
                 currentSessionId = sessionId;
-                currentUserId = userId;
-                currentUserType = userType;
+                currentUserId = safeUserId;
+                currentUserType = safeUserType;
 
                 // Join room
                 socket.join(sessionId);
-                console.log(`📌 ${userName} (${userType}) joined room: ${sessionId}`);
+                console.log(`📌 ${safeUserName} (${safeUserType}) joined room: ${sessionId}`);
 
                 // Store session info
                 if (!activeSessions.has(sessionId)) {
                     activeSessions.set(sessionId, {
-                        siswaId: userType === 'siswa' ? userId : null,
-                        guruId: userType === 'guru' ? userId : null,
-                        siswaName: userType === 'siswa' ? userName : null,
-                        guruName: userType === 'guru' ? userName : null,
-                        siswaSocket: userType === 'siswa' ? socket.id : null,
-                        guruSocket: userType === 'guru' ? socket.id : null
+                        siswaId: safeUserType === 'siswa' ? safeUserId : null,
+                        guruId: safeUserType === 'guru' ? safeUserId : null,
+                        siswaName: safeUserType === 'siswa' ? safeUserName : null,
+                        guruName: safeUserType === 'guru' ? safeUserName : null,
+                        siswaSocket: safeUserType === 'siswa' ? socket.id : null,
+                        guruSocket: safeUserType === 'guru' ? socket.id : null
                     });
                 } else {
                     const session = activeSessions.get(sessionId);
-                    if (userType === 'siswa') {
-                        session.siswaId = userId;
-                        session.siswaName = userName;
+                    if (safeUserType === 'siswa') {
+                        session.siswaId = safeUserId;
+                        session.siswaName = safeUserName;
                         session.siswaSocket = socket.id;
                     } else {
-                        session.guruId = userId;
-                        session.guruName = userName;
+                        session.guruId = safeUserId;
+                        session.guruName = safeUserName;
                         session.guruSocket = socket.id;
                     }
                     activeSessions.set(sessionId, session);
@@ -125,16 +185,16 @@ function registerChatSocket(io) {
                 // Send history to the user who just joined (dari database)
                 const history = await chatService.getChatHistoryFromDb(sessionId);
                 if (history.length > 0) {
-                    console.log(`📚 Sending ${history.length} messages to ${userName}`);
+                    console.log(`📚 Sending ${history.length} messages to ${safeUserName}`);
                     socket.emit('chat-history', history);
                 }
 
                 // Notify others in the room
                 socket.to(sessionId).emit('user-joined', {
-                    userId: userId,
-                    userName: userName,
-                    userType: userType,
-                    message: `${userName} telah bergabung dalam konseling.`
+                    userId: safeUserId,
+                    userName: safeUserName,
+                    userType: safeUserType,
+                    message: `${safeUserName} telah bergabung dalam konseling.`
                 });
 
             } catch (error) {
@@ -145,12 +205,29 @@ function registerChatSocket(io) {
         // Handle incoming chat message
         socket.on('chat-message', async (data) => {
             try {
-                const { sessionId, message, senderId, senderName, senderType } = data;
+                const { sessionId, message } = data || {};
 
                 if (!sessionId || !message) {
-                    console.error('Invalid message data:', data);
+                    socket.emit('error', { message: 'Data pesan tidak valid' });
                     return;
                 }
+                if (!socket.user) {
+                    socket.emit('error', { message: 'Autentikasi diperlukan' });
+                    return;
+                }
+                // Harus sudah join room ini
+                if (currentSessionId !== sessionId || !socket.rooms.has(sessionId)) {
+                    socket.emit('error', { message: 'Anda belum bergabung ke sesi chat ini' });
+                    return;
+                }
+
+                // Identitas 100% dari JWT
+                const senderType = socket.user.role === 'guru' ? 'guru' : 'siswa';
+                const senderId =
+                    senderType === 'siswa'
+                        ? String(socket.user.nis || socket.user.id)
+                        : String(socket.user.username || socket.user.id);
+                const senderName = String(socket.user.nama || senderId);
 
                 const messageData = await chatService.saveChatMessage({
                     sessionId,
@@ -160,7 +237,6 @@ function registerChatSocket(io) {
                     senderType,
                 });
 
-                // Broadcast to all users in the room (including sender)
                 io.to(sessionId).emit('new-message', messageData);
 
             } catch (error) {

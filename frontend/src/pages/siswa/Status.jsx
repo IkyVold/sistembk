@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import axiosClient, { extractErrorMessage } from '../../api/axiosClient';
 import StatusChatbot from './StatusChatbot';
+import { sessionIdFromKonselingId } from '../../utils/chatSession';
 import './status.css';
 
 function formatTanggal(t) {
@@ -67,13 +68,14 @@ export default function Status() {
     const guruNama = item ? item.guru : localStorage.getItem('guruNama');
     const tanggal = item ? item.tanggal : null;
     const jam = item ? item.jam : null;
-    if (!currentUser || !guruNama) {
+    const konselingId = item?.id || idRef.current;
+    if (!currentUser || !guruNama || !konselingId) {
       alert('Data konseling tidak lengkap!');
       return;
     }
-    const today = new Date().toISOString().split('T')[0];
-    const sessionId = `session_${currentUser}_${guruNama.replace(/\s/g, '_')}_${today}`;
+    const sessionId = sessionIdFromKonselingId(konselingId);
     localStorage.setItem('currentChatSession', sessionId);
+    localStorage.setItem('currentChatKonselingId', String(konselingId));
     localStorage.setItem('chatGuruName', guruNama);
     localStorage.setItem('chatTanggal', tanggal);
     localStorage.setItem('chatJam', jam);

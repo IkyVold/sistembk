@@ -16,14 +16,12 @@ export const JAM_LIST = [
 ];
 
 export const KATEGORI_MASALAH_LIST = [
-  'Bullying Verbal',
-  'Bullying Fisik',
-  'Bullying Sosial / Pengucilan',
-  'Cyberbullying',
-  'Masalah Keluarga',
-  'Masalah Pribadi / Emosional',
-  'Masalah Akademik',
-  'Masalah Pertemanan',
+  'Akademik',
+  'Sosial',
+  'Pribadi',
+  'Karir',
+  'Bullying',
+  'Keluarga',
   'Lainnya',
 ];
 

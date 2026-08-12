@@ -71,11 +71,8 @@ async function loginSiswa({ nis, password }) {
       );
     }
 
-    const sisa = MAX_FAILED_ATTEMPTS - attempts;
-    throw new HttpError(
-      401,
-      `NIS atau password salah. Sisa percobaan: ${sisa} kali.`
-    );
+    // Pesan generik sama seperti NIS tidak ditemukan — cegah user enumeration
+    throw new HttpError(401, 'NIS atau password salah');
   }
 
   // Login sukses — reset counter & kunci

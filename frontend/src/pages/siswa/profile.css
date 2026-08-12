@@ -672,3 +672,19 @@
             .profile-page .info-row { grid-template-columns: 1fr; gap: 8px; }
             .profile-page .info-row:hover { margin: 0; }
         }
+
+@media (max-width: 767px) {
+  .profile-page {
+    padding-bottom: 90px !important;
+  }
+  .profile-page .container,
+  .profile-page .main,
+  .profile-page .profile-content {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+  .profile-page .profile-grid,
+  .profile-page .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

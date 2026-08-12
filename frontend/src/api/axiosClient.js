@@ -1,93 +1,55 @@
 import axios from 'axios';
-import { getToken, getTokenForRole, getActiveRole } from './tokenStore';
+import { getActiveRole, getToken, getCookie, clearToken } from './tokenStore';
 
 const axiosClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 });
 
-/**
- * Pilih token yang paling cocok untuk URL.
- * Endpoint khusus guru tidak boleh ikut token siswa (penyebab 403).
- */
-function resolveTokenForRequest(config) {
-  const url = String(config.url || '');
-  const method = String(config.method || 'get').toLowerCase();
-
-  // Endpoint siswa untuk batalkan konseling (jangan pakai token guru)
-  const isSiswaBatalEndpoint = url.includes('/batal-siswa');
-
-  // Endpoint hanya untuk Guru BK (dan admin)
-  const isGuruEndpoint =
-    !isSiswaBatalEndpoint &&
-    (url.includes('/konseling-bk') ||
-      url.includes('/konseling/walkin') ||
-      url.includes('/konfirmasi') ||
-      url.includes('/notifikasi-guru') ||
-      url.includes('/siswa/import') ||
-      url.includes('/api/siswa') ||
-      url.endsWith('/siswa') ||
-      (url.includes('/konseling/') && (method === 'put' || method === 'delete' || method === 'post')) ||
-      (url.includes('/guru-bk/') && url.includes('/foto')) ||
-      (url.includes('/riwayat-kelas') && method !== 'get') ||
-      (url.includes('/informasi') && method !== 'get'));
-
-  // Admin endpoints
-  const isAdminEndpoint = url.includes('/api/admin/');
-
-  // Kepsek
-  const isKepsekEndpoint = url.includes('/konseling-all');
-
-  if (isAdminEndpoint) {
-    return getTokenForRole('admin') || getToken();
-  }
-  if (isKepsekEndpoint) {
-    return getTokenForRole('kepsek') || getTokenForRole('admin') || getToken();
-  }
-  if (isGuruEndpoint) {
-    return getTokenForRole('guru') || getTokenForRole('admin') || getToken();
-  }
-
-  return getToken();
-}
-
 axiosClient.interceptors.request.use((config) => {
-  const token = resolveTokenForRequest(config);
+  const role = getActiveRole();
+  if (role) {
+    config.headers['X-Auth-Role'] = role;
+  }
+
+  // Bearer fallback jika cookie HttpOnly tidak terkirim (dev localhost beda port)
+  const token = getToken();
   if (token) {
-    config.headers = config.headers || {};
-    if (typeof config.headers.set === 'function') {
-      config.headers.set('Authorization', `Bearer ${token}`);
-    } else {
-      config.headers.Authorization = `Bearer ${token}`;
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  const method = String(config.method || 'get').toLowerCase();
+  if (!['get', 'head', 'options'].includes(method)) {
+    const csrf = getCookie('csrf_token');
+    if (csrf) {
+      config.headers['X-CSRF-Token'] = csrf;
     }
   }
 
-  if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
-    if (config.headers) {
-      if (typeof config.headers.delete === 'function') {
-        config.headers.delete('Content-Type');
-      } else {
-        delete config.headers['Content-Type'];
-      }
-    }
-  }
   return config;
 });
 
 axiosClient.interceptors.response.use(
   (res) => res,
-  (error) => Promise.reject(error)
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      const role = getActiveRole();
+      if (role) clearToken(role);
+    }
+    return Promise.reject(error);
+  }
 );
 
-export function extractErrorMessage(error, fallback = 'Terjadi kesalahan. Silakan coba lagi.') {
-  if (error.response?.data?.error) {
-    return error.response.data.error;
+export function extractErrorMessage(error, fallback = 'Terjadi kesalahan') {
+  if (error?.response?.data?.error) {
+    const e = error.response.data.error;
+    return typeof e === 'string' ? e : e.message || fallback;
   }
-  if (error.request) {
-    return `Koneksi ke server gagal. Pastikan backend berjalan di ${axiosClient.defaults.baseURL}.`;
-  }
+  if (error?.response?.data?.message) return error.response.data.message;
+  if (error?.message) return error.message;
   return fallback;
 }
 

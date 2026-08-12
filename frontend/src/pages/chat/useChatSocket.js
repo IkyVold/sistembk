@@ -32,13 +32,17 @@ export default function useChatSocket({ sessionId, currentUser }) {
     setEvents([]);
 
     const socket = io(SOCKET_URL, {
+      withCredentials: true,
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       timeout: 20000,
-      auth: { token: getToken() },
+      auth: {
+        role: currentUserRef.current?.type || currentUser?.type || undefined,
+        token: getToken() || undefined,
+      },
     });
     socketRef.current = socket;
 

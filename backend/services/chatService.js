@@ -54,8 +54,34 @@ async function migrateChatHistoryJsonIfNeeded() {
   }
 }
 
+
+async function ensureChatSessionTable() {
+  const pool = require('../database');
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS chat_session (
+      id VARCHAR(64) PRIMARY KEY,
+      konseling_id INT NOT NULL UNIQUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      last_activity_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      closed_at TIMESTAMP NULL DEFAULT NULL,
+      INDEX idx_chat_session_konseling (konseling_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function ensureChatSession(sessionId, konselingId) {
+  const pool = require('../database');
+  await pool.query(
+    `INSERT INTO chat_session (id, konseling_id)
+     VALUES (?, ?)
+     ON DUPLICATE KEY UPDATE last_activity_at = CURRENT_TIMESTAMP`,
+    [sessionId, konselingId]
+  );
+}
+
 async function initChatStorage() {
   await ensureChatMessagesTable();
+  await ensureChatSessionTable();
   await migrateChatHistoryJsonIfNeeded();
 }
 
@@ -80,7 +106,7 @@ async function saveChatMessage({ sessionId, message, senderId, senderName, sende
   const sanitizedMessage = sanitizeText(message);
   const dbSenderType = senderType === 'guru' ? 'guru' : 'siswa';
 
-  console.log(`📨 Message in ${sessionId} from ${senderName}: ${sanitizedMessage.substring(0, 50)}`);
+  console.log(`📨 Message in session (isi disembunyikan) from role=${senderType}`);
 
   const result = await chatModel.insertMessage({
     sessionId,
@@ -112,4 +138,5 @@ module.exports = {
   initChatStorage,
   getChatHistoryFromDb,
   saveChatMessage,
+  ensureChatSession,
 };

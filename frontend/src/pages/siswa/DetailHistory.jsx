@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { sessionIdFromKonselingId } from '../../utils/chatSession';
 import Navbar from '../../components/Navbar';
 import axiosClient, { extractErrorMessage } from '../../api/axiosClient';
 import './detailHistory.css';
@@ -181,10 +182,10 @@ export default function DetailHistory() {
     }
     const guruNama = item.guru;
     const currentUser = localStorage.getItem('currentUser');
-    const today = new Date().toISOString().split('T')[0];
-    const sessionId = `session_${currentUser}_${guruNama.replace(/\s/g, '_')}_${today}`;
+    const sessionId = sessionIdFromKonselingId(item.id || id);
     localStorage.setItem('chatGuruName', guruNama);
     localStorage.setItem('currentChatSession', sessionId);
+    localStorage.setItem('currentChatKonselingId', String(item.id || id));
     localStorage.setItem('jenisKonseling', 'Daring');
     navigate('/chat-siswa');
   }

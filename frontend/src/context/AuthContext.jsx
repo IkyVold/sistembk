@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 import { clearToken, activateRoleToken } from '../api/tokenStore';
+import { logout as apiLogout } from '../api/authService';
 
 const AuthContext = createContext(null);
 
@@ -113,6 +114,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback((role) => {
+    // Hapus HttpOnly cookie di server (async, fire-and-forget)
+    apiLogout(role).catch(() => {});
     if (role) clearToken(role);
     else clearToken();
     if (role === 'siswa') {

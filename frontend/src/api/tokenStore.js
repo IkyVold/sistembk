@@ -1,5 +1,5 @@
-// JWT per-role: siswa/guru/kepsek/admin tidak saling menimpa.
-const ACTIVE_KEY = 'authToken';
+// Role aktif di localStorage; JWT fallback di sessionStorage (per-tab).
+// Preferensi utama tetap HttpOnly cookie; Bearer dipakai jika cookie tidak terkirim (dev beda port).
 const ACTIVE_ROLE_KEY = 'authActiveRole';
 
 function roleKey(role) {
@@ -10,55 +10,62 @@ export function getActiveRole() {
   return localStorage.getItem(ACTIVE_ROLE_KEY) || null;
 }
 
+export function setActiveRole(role) {
+  if (role) localStorage.setItem(ACTIVE_ROLE_KEY, role);
+  else localStorage.removeItem(ACTIVE_ROLE_KEY);
+}
+
 export function getToken() {
   const role = getActiveRole();
   if (role) {
-    const t = localStorage.getItem(roleKey(role));
+    const t = sessionStorage.getItem(roleKey(role));
     if (t) return t;
   }
-  return localStorage.getItem(ACTIVE_KEY);
+  return sessionStorage.getItem('authToken') || null;
 }
 
 export function getTokenForRole(role) {
-  return localStorage.getItem(roleKey(role));
+  return sessionStorage.getItem(roleKey(role)) || null;
 }
 
-/** Simpan token untuk role & jadikan aktif. */
 export function setToken(token, role) {
-  if (!token) {
-    localStorage.removeItem(ACTIVE_KEY);
-    return;
-  }
-  localStorage.setItem(ACTIVE_KEY, token);
-  if (role) {
-    localStorage.setItem(roleKey(role), token);
-    localStorage.setItem(ACTIVE_ROLE_KEY, role);
-  }
+  if (role) setActiveRole(role);
+  if (!token) return;
+  sessionStorage.setItem('authToken', token);
+  if (role) sessionStorage.setItem(roleKey(role), token);
+  // bersihkan sisa localStorage lama
+  localStorage.removeItem('authToken');
+  if (role) localStorage.removeItem(roleKey(role));
 }
 
-/** Aktifkan token role tertentu sebelum request halaman itu. */
 export function activateRoleToken(role) {
-  const t = localStorage.getItem(roleKey(role));
-  if (t) {
-    localStorage.setItem(ACTIVE_KEY, t);
-    localStorage.setItem(ACTIVE_ROLE_KEY, role);
-    return t;
-  }
-  return null;
+  if (role) setActiveRole(role);
+  const t = role ? sessionStorage.getItem(roleKey(role)) : null;
+  if (t) sessionStorage.setItem('authToken', t);
+  return t || getToken();
 }
 
 export function clearToken(role) {
   if (role) {
-    localStorage.removeItem(roleKey(role));
+    sessionStorage.removeItem(roleKey(role));
     if (getActiveRole() === role) {
-      localStorage.removeItem(ACTIVE_KEY);
       localStorage.removeItem(ACTIVE_ROLE_KEY);
+      sessionStorage.removeItem('authToken');
     }
   } else {
-    localStorage.removeItem(ACTIVE_KEY);
     localStorage.removeItem(ACTIVE_ROLE_KEY);
+    sessionStorage.removeItem('authToken');
     ['siswa', 'guru', 'kepsek', 'admin'].forEach((r) => {
+      sessionStorage.removeItem(roleKey(r));
       localStorage.removeItem(roleKey(r));
     });
+    localStorage.removeItem('authToken');
   }
+}
+
+export function getCookie(name) {
+  const match = document.cookie.match(
+    new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()[\]\\/+^])/g, '\\$1') + '=([^;]*)')
+  );
+  return match ? decodeURIComponent(match[1]) : null;
 }

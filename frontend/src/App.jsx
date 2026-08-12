@@ -30,7 +30,14 @@ export default function App() {
         <Route path="/login-guru" element={<LoginGuru />} />
         <Route path="/login-kepsek" element={<LoginKepsek />} />
         <Route path="/login-admin" element={<LoginAdmin />} />
-        <Route path="/dashboard-admin" element={<AdminDashboard />} />
+        <Route
+          path="/dashboard-admin"
+          element={
+            <ProtectedRoute role="admin" redirectTo="/login-admin">
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Area siswa (butuh login siswa) */}
         <Route

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { useAuth } from '../../context/AuthContext';
-import { activateRoleToken, getTokenForRole } from '../../api/tokenStore';
+import { activateRoleToken, getToken } from '../../api/tokenStore';
 import { uploadFotoGuruBk, deleteFotoGuruBk } from '../../api/akunService';
 import { mediaUrl } from '../../utils/mediaUrl';
 import { fetchNotifikasiGuru, tandaiSemuaNotifikasiGuruDibaca } from '../../api/notifikasiService';
@@ -22,6 +22,7 @@ import ImportAbsenModal from './modals/ImportAbsenModal';
 import RiwayatKelasModal from './modals/RiwayatKelasModal';
 import InformasiModal from './modals/InformasiModal';
 import { mapKonselingRow, formatTanggal } from './helpers';
+import { sessionIdFromKonselingId } from '../../utils/chatSession';
 import {
   fetchKonselingByGuru,
   konfirmasiJadwalKonseling,
@@ -48,16 +49,12 @@ export default function GuruBkDashboard() {
     };
   }, [auth.guru]);
 
-  // Pastikan token JWT role guru aktif (hindari 403 karena token siswa masih aktif)
+  // Aktifkan role guru untuk header X-Auth-Role (JWT ada di HttpOnly cookie)
   useEffect(() => {
-    const t = activateRoleToken('guru');
-    if (!t && auth.guru) {
-      // Session UI ada tapi token guru tidak ada → wajib login ulang
-      console.warn('Token guru tidak ditemukan — silakan login ulang');
-      auth.logout('guru');
-      navigate('/login-guru');
+    if (auth.guru) {
+      activateRoleToken('guru');
     }
-  }, [auth.guru, navigate]);
+  }, [auth.guru]);
 
   // ==================== KONSELING STATE ====================
   const [semuaKonseling, setSemuaKonseling] = useState([]);
@@ -139,10 +136,11 @@ export default function GuruBkDashboard() {
       })
       .catch((err) => console.warn('Gagal muat notifikasi guru:', err));
 
-    const token = getTokenForRole('guru') || activateRoleToken('guru');
+    activateRoleToken('guru');
     const socket = io(SOCKET_URL, {
+      withCredentials: true,
       transports: ['websocket', 'polling'],
-      auth: token ? { token } : undefined,
+      auth: { role: 'guru', token: getToken() || undefined },
     });
     socketRef.current = socket;
 
@@ -379,17 +377,16 @@ export default function GuruBkDashboard() {
     }
 
     const username = item.nisnSiswa;
-    const guruNama = item.guru;
-    const today = new Date().toISOString().split('T')[0];
-    const sessionId = `session_${username}_${guruNama.replace(/\s/g, '_')}_${today}`;
+    const sessionId = sessionIdFromKonselingId(item.id);
 
     localStorage.setItem('currentChatSession', sessionId);
+    localStorage.setItem('currentChatKonselingId', String(item.id));
     localStorage.setItem('chatSiswaName', item.namaSiswa || username);
     localStorage.setItem('chatSiswaNISN', item.nisnSiswa || '-');
     localStorage.setItem('chatKategori', item.kategori || '-');
 
     navigate(
-      `/chat-guru?session=${encodeURIComponent(sessionId)}&siswa=${encodeURIComponent(item.namaSiswa || username)}&kategori=${encodeURIComponent(item.kategori || '-')}`
+      `/chat-guru?session=${encodeURIComponent(sessionId)}&konseling=${item.id}&siswa=${encodeURIComponent(item.namaSiswa || username)}&kategori=${encodeURIComponent(item.kategori || '-')}`
     );
   }
 
@@ -565,7 +562,7 @@ export default function GuruBkDashboard() {
   if (!currentGuru) return null;
 
   const tabTitles = {
-    konseling: { title: '📋 Monitoring & Konfirmasi Konseling', desc: `Kelola, konfirmasi jadwal, dan pantau semua permintaan konseling dari siswa untuk <strong>${currentGuru.nama}</strong>` },
+    konseling: { title: '📋 Monitoring & Konfirmasi Konseling', desc: `Kelola, konfirmasi jadwal, dan pantau semua permintaan konseling dari siswa untuk ${currentGuru?.nama || 'Guru BK'}` },
     siswa: { title: '👥 Daftar Siswa', desc: '' },
     informasi: { title: '💡 Informasi & FAQ Chatbot', desc: '' },
   };
@@ -760,7 +757,7 @@ export default function GuruBkDashboard() {
           <div className="content-header">
             <h2>{tabTitles[activeTab].title}</h2>
             {activeTab === 'konseling' ? (
-              <p dangerouslySetInnerHTML={{ __html: tabTitles.konseling.desc }} />
+              <p>{tabTitles.konseling.desc}</p>
             ) : null}
           </div>
 

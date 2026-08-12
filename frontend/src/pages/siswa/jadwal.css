@@ -207,3 +207,14 @@
             .jadwal-page .form-actions { flex-direction: column; }
             .jadwal-page .btn-cancel, .jadwal-page .btn-submit { width: 100%; justify-content: center; }
         }
+
+@media (max-width: 767px) {
+  .jadwal-page {
+    padding-bottom: 90px !important;
+  }
+  .jadwal-page .container,
+  .jadwal-page .main {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+}

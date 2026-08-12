@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
-import { getToken } from '../api/tokenStore';
 import {
   fetchNotifikasi,
   tandaiNotifikasiDibaca,
@@ -44,9 +43,11 @@ export default function useNotifikasiJadwal(nis) {
       });
 
     const socket = io(SOCKET_URL, {
+      withCredentials: true,
+      auth: { role: 'siswa' },
       transports: ['websocket', 'polling'],
       reconnection: true,
-      auth: { token: getToken() },
+      
     });
     socketRef.current = socket;
 

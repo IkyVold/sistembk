@@ -3,7 +3,7 @@ const konselingService = require('../services/konselingService');
 const { asyncHandler } = require('../middleware/errorHandler');
 
 const create = asyncHandler(async (req, res) => {
-  const result = await konselingService.createPengajuan(req.body);
+  const result = await konselingService.createPengajuan(req.body, req.user);
   res.json({ success: true, message: result.message, id: result.id });
 });
 
@@ -12,31 +12,32 @@ const listAll = asyncHandler(async (req, res) => {
 });
 
 const listByGuru = asyncHandler(async (req, res) => {
-  res.json(await konselingService.listByGuru(req.query.guru));
+  // Untuk role guru, service mengabaikan query dan memakai JWT
+  res.json(await konselingService.listByGuru(req.query.guru, req.user));
 });
 
 const konfirmasi = asyncHandler(async (req, res) => {
-  const result = await konselingService.konfirmasi(req.params.id, req.body);
+  const result = await konselingService.konfirmasi(req.params.id, req.body, req.user);
   res.json({ success: true, message: result.message });
 });
 
 const updateStatus = asyncHandler(async (req, res) => {
-  const result = await konselingService.updateStatus(req.params.id, req.body.status);
+  const result = await konselingService.updateStatus(req.params.id, req.body.status, req.user);
   res.json({ success: true, message: result.message });
 });
 
 const simpanLaporan = asyncHandler(async (req, res) => {
-  const result = await konselingService.simpanLaporan(req.params.id, req.body);
+  const result = await konselingService.simpanLaporan(req.params.id, req.body, req.user);
   res.json({ success: true, message: result.message, edited: result.edited });
 });
 
 const walkin = asyncHandler(async (req, res) => {
-  const result = await konselingService.createWalkin(req.body);
+  const result = await konselingService.createWalkin(req.body, req.user);
   res.json({ success: true, message: result.message, id: result.id });
 });
 
 const batalkan = asyncHandler(async (req, res) => {
-  const result = await konselingService.batalkan(req.params.id);
+  const result = await konselingService.batalkan(req.params.id, req.user);
   res.json({ success: true, message: result.message });
 });
 
@@ -64,7 +65,7 @@ const listByNis = asyncHandler(async (req, res) => {
 });
 
 const getDetail = asyncHandler(async (req, res) => {
-  res.json(await konselingService.getDetail(req.params.id));
+  res.json(await konselingService.getDetail(req.params.id, req.user));
 });
 
 module.exports = {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GURU_BK_LIST } from '../../data/guruBkList';
+import { sessionIdFromKonselingId } from '../../utils/chatSession';
+import { fetchGuruBkPublic } from '../../api/akunService';
 
 function escapeSafe(text) {
   return text || '';
@@ -22,49 +23,33 @@ function formatTime(dateStr) {
   }
 }
 
-// Bangun daftar sesi chat dari riwayat konseling daring yang sudah terkonfirmasi
-// (satu sesi per guru, sama seperti logika asli di index.html)
-function buildChatSessions(semuaKonseling, currentUserId) {
-  const chatSessions = [];
+// Satu room chat per konseling (bukan per guru+hari)
+function buildChatSessions(semuaKonseling) {
   const validKonseling = semuaKonseling.filter(
-    (item) => item.jenis === 'Daring' && item.status_konfirmasi === 'Terkonfirmasi' && item.status !== 'Dibatalkan'
+    (item) =>
+      item.jenis === 'Daring' &&
+      (item.status_konfirmasi === 'Terkonfirmasi' || item.statusKonfirmasi === 'Terkonfirmasi') &&
+      item.status !== 'Dibatalkan'
   );
 
-  validKonseling.forEach((konseling) => {
-    const existing = chatSessions.find((c) => c.guruName === konseling.guru);
-    if (!existing) {
-      const today = new Date().toISOString().split('T')[0];
-      const sessionId = `session_${currentUserId}_${konseling.guru.replace(/\s/g, '_')}_${today}`;
-      let lastMessage = konseling.deskripsi?.substring(0, 50) || 'Konseling telah dikonfirmasi';
-      let lastTime = konseling.tanggal_konfirmasi || konseling.tanggal;
+  const chatSessions = validKonseling.map((konseling) => {
+    const sessionId = sessionIdFromKonselingId(konseling.id);
+    let lastMessage = konseling.deskripsi?.substring(0, 50) || 'Konseling telah dikonfirmasi';
+    let lastTime = konseling.tanggal_konfirmasi || konseling.tanggalKonfirmasi || konseling.tanggal;
 
-      const chatKey = `chat_${sessionId}`;
-      const chatHistory = localStorage.getItem(chatKey);
-      if (chatHistory) {
-        try {
-          const history = JSON.parse(chatHistory);
-          if (history.length > 0) {
-            const lastMsg = history[history.length - 1];
-            lastMessage = lastMsg.message.substring(0, 50);
-            lastTime = lastMsg.timestamp;
-          }
-        } catch {
-          // abaikan history yang corrupt
-        }
-      }
-
-      chatSessions.push({
-        guruName: konseling.guru,
-        guruAvatar: konseling.guru.charAt(0),
-        lastMessage,
-        lastTime,
-        unread: 0,
-        sessionId,
-      });
-    }
+    return {
+      konselingId: konseling.id,
+      guruName: konseling.guru,
+      guruAvatar: String(konseling.guru || '?').charAt(0),
+      lastMessage,
+      lastTime,
+      unread: 0,
+      sessionId,
+      kategori: konseling.kategori,
+    };
   });
 
-  chatSessions.sort((a, b) => new Date(b.lastTime) - new Date(a.lastTime));
+  chatSessions.sort((a, b) => new Date(b.lastTime || 0) - new Date(a.lastTime || 0));
   return chatSessions;
 }
 
@@ -72,11 +57,28 @@ export default function ChatWidget({ semuaKonseling, currentUserId }) {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('chats');
+  const [guruKontak, setGuruKontak] = useState([]);
+  const [loadingKontak, setLoadingKontak] = useState(false);
   const widgetRef = useRef(null);
   const floatBtnRef = useRef(null);
 
-  const chatSessions = buildChatSessions(semuaKonseling, currentUserId);
+  const chatSessions = buildChatSessions(semuaKonseling || []);
   const unreadCount = chatSessions.reduce((sum, c) => sum + (c.unread || 0), 0);
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    let cancelled = false;
+    async function loadGuruKontak() {
+      setLoadingKontak(true);
+      const res = await fetchGuruBkPublic();
+      if (!cancelled && res.success) {
+        setGuruKontak(Array.isArray(res.data) ? res.data : []);
+      }
+      if (!cancelled) setLoadingKontak(false);
+    }
+    loadGuruKontak();
+    return () => { cancelled = true; };
+  }, [isOpen]);
+
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -94,21 +96,31 @@ export default function ChatWidget({ semuaKonseling, currentUserId }) {
     return () => document.removeEventListener('click', handleClickOutside);
   }, [isOpen]);
 
-  function openChat(guruName, sessionId) {
-    localStorage.setItem('chatGuruName', guruName);
-    localStorage.setItem('currentChatSession', sessionId);
+  function openChat(chat) {
+    localStorage.setItem('chatGuruName', chat.guruName);
+    localStorage.setItem('guruNama', chat.guruName);
+    localStorage.setItem('currentChatSession', chat.sessionId);
+    localStorage.setItem('currentChatKonselingId', String(chat.konselingId));
+    localStorage.setItem('lastKonselingId', String(chat.konselingId));
     localStorage.setItem('jenisKonseling', 'Daring');
     setIsOpen(false);
-    navigate('/chat-siswa');
+    navigate(`/chat-siswa?konseling=${chat.konselingId}&session=${encodeURIComponent(chat.sessionId)}`);
   }
 
-  function startNewChat(guruName) {
-    localStorage.setItem('guruNama', guruName);
-    localStorage.setItem('guruSpesialisasi', 'Guru BK');
-    localStorage.setItem('guruNpsn', '023497329432');
-    localStorage.setItem('guruAlamat', 'Blitar');
+  function startNewChat(guru) {
+    // Hanya arahkan ke alur pengajuan — harus pilih jadwal, bukan chat bebas
+    const nama = typeof guru === 'string' ? guru : guru?.nama;
+    if (!nama) return;
+    localStorage.setItem('guruNama', nama);
+    if (guru && typeof guru === 'object') {
+      if (guru.id != null) localStorage.setItem('guruId', String(guru.id));
+      if (guru.username) localStorage.setItem('guruUsername', guru.username);
+      localStorage.setItem('guruSpesialisasi', guru.spesialisasi || 'Guru BK');
+      localStorage.setItem('guruNpsn', guru.npsn || '');
+      localStorage.setItem('guruAlamat', guru.alamat || '');
+    }
     setIsOpen(false);
-    navigate('/jadwal');
+    navigate('/pilih');
   }
 
   return (
@@ -166,7 +178,7 @@ export default function ChatWidget({ semuaKonseling, currentUserId }) {
               </div>
             ) : (
               chatSessions.map((chat) => (
-                <div className="chat-item" key={chat.sessionId} onClick={() => openChat(chat.guruName, chat.sessionId)}>
+                <div className="chat-item" key={chat.sessionId} onClick={() => openChat(chat)}>
                   <div className="chat-avatar">{(chat.guruAvatar || chat.guruName.charAt(0)).toUpperCase()}</div>
                   <div className="chat-info">
                     <div className="chat-name">
@@ -190,15 +202,31 @@ export default function ChatWidget({ semuaKonseling, currentUserId }) {
 
         {activeTab === 'contacts' && (
           <div className="contacts-list">
-            {GURU_BK_LIST.map((guru) => (
-              <div className="contact-item" key={guru.id} onClick={() => startNewChat(guru.nama)}>
-                <div className="contact-avatar">{guru.avatar}</div>
-                <div className="contact-info">
-                  <div className="contact-name">{guru.nama}</div>
-                  <div className="contact-role">{guru.spesialisasi}</div>
-                </div>
+            {loadingKontak && (
+              <div className="empty-chat" style={{ padding: 16 }}>Memuat daftar Guru BK…</div>
+            )}
+            {!loadingKontak && guruKontak.length === 0 && (
+              <div className="empty-chat" style={{ padding: 16 }}>
+                <div className="empty-title">Tidak ada Guru BK aktif</div>
+                <div className="empty-desc">Hubungi admin sekolah jika daftar kosong.</div>
               </div>
-            ))}
+            )}
+            {!loadingKontak &&
+              guruKontak.map((guru) => (
+                <div
+                  className="contact-item"
+                  key={guru.id || guru.username}
+                  onClick={() => startNewChat(guru)}
+                >
+                  <div className="contact-avatar">
+                    {(guru.avatar || (guru.nama || '?').charAt(0)).toString().slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="contact-info">
+                    <div className="contact-name">{guru.nama}</div>
+                    <div className="contact-role">{guru.spesialisasi || 'Guru BK'}</div>
+                  </div>
+                </div>
+              ))}
           </div>
         )}
 

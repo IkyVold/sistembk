@@ -18,7 +18,7 @@ async function chatWithAI(messages) {
     // Ambil pesan terakhir user
     const lastUserMessage = messages.filter(m => m.role === 'user').pop();
     if (lastUserMessage) {
-        console.log(`📝 Pesan user: ${lastUserMessage.content.substring(0, 100)}`);
+        console.log('📝 Chat request diterima (isi disembunyikan)');
     }
 
     // Ambil knowledge base FAQ yang dikelola Guru BK (beasiswa, PT, karir, dll)
@@ -99,7 +99,7 @@ Ingat: Anda BUKAN guru mata pelajaran. Anda adalah KONSELOR BK. Fokus pada memba
 
         const reply = response.data.choices[0]?.message?.content || 'Maaf, saya tidak dapat memproses permintaan Anda saat ini.';
 
-        console.log(`🤖 Respon AI: ${reply.substring(0, 100)}...`);
+        console.log('✅ Chat response dikirim');
 
         return { reply, success: true };
     } catch (error) {

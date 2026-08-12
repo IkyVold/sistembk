@@ -5,7 +5,6 @@ export const GURU_BK_LIST = [
   {
     id: 1,
     username: 'joko_bk',
-    password: 'guru123',
     nama: 'Joko Ardianto S.Pd',
     spesialisasi: 'Guru BK',
     npsn: '023497329432',
@@ -15,7 +14,6 @@ export const GURU_BK_LIST = [
   {
     id: 2,
     username: 'wiwiek_bk',
-    password: 'guru123',
     nama: 'wiwiek Hariati S.Pd',
     spesialisasi: 'Guru BK',
     npsn: '023497329432',
@@ -25,7 +23,6 @@ export const GURU_BK_LIST = [
   {
     id: 3,
     username: 'dicky_bk',
-    password: 'guru123',
     nama: 'Dicky Ardiansyah S.Pd',
     spesialisasi: 'Guru BK',
     npsn: '023497329432',

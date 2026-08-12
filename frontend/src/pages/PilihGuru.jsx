@@ -40,6 +40,7 @@ export default function PilihGuru() {
   function handlePilih(counselor) {
     // Nama dipakai field guru_bk; username untuk notifikasi andal ke Guru BK
     localStorage.setItem('guruNama', counselor.nama);
+    localStorage.setItem('guruId', counselor.id != null ? String(counselor.id) : '');
     localStorage.setItem('guruUsername', counselor.username || '');
     localStorage.setItem('guruSpesialisasi', counselor.spesialisasi || 'Guru BK');
     localStorage.setItem('guruNpsn', counselor.npsn || '');

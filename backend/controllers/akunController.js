@@ -11,6 +11,9 @@ const loginGuru = asyncHandler(async (req, res) => {
     username: guru.username,
     nama: guru.nama,
   });
+  const { setAuthCookie, setCsrfCookie } = require('../middleware/auth');
+  setAuthCookie(res, token, 'guru');
+  setCsrfCookie(res);
   res.json({ success: true, token, guru });
 });
 
@@ -22,6 +25,9 @@ const loginKepsek = asyncHandler(async (req, res) => {
     username: kepsek.username,
     nama: kepsek.nama,
   });
+  const { setAuthCookie, setCsrfCookie } = require('../middleware/auth');
+  setAuthCookie(res, token, 'kepsek');
+  setCsrfCookie(res);
   res.json({ success: true, token, kepsek });
 });
 
@@ -33,6 +39,9 @@ const loginAdmin = asyncHandler(async (req, res) => {
     username: admin.username,
     nama: admin.nama,
   });
+  const { setAuthCookie, setCsrfCookie } = require('../middleware/auth');
+  setAuthCookie(res, token, 'admin');
+  setCsrfCookie(res);
   res.json({ success: true, token, admin });
 });
 
@@ -82,19 +91,35 @@ const deleteKepsek = asyncHandler(async (req, res) => {
 });
 
 const updateFotoGuru = asyncHandler(async (req, res) => {
+  const HttpError = require('../utils/HttpError');
+  if (req.user.role === 'guru' && String(req.user.username) !== String(req.params.username)) {
+    throw new HttpError(403, 'Anda hanya dapat mengubah foto profil sendiri');
+  }
   const result = await akunService.updateFotoGuru(req.params.username, req.file);
   res.json({ success: true, ...result });
 });
 
 const deleteFotoGuru = asyncHandler(async (req, res) => {
+  const HttpError = require('../utils/HttpError');
+  if (req.user.role === 'guru' && String(req.user.username) !== String(req.params.username)) {
+    throw new HttpError(403, 'Anda hanya dapat mengubah foto profil sendiri');
+  }
   const result = await akunService.deleteFotoGuru(req.params.username);
   res.json({ success: true, ...result });
+});
+
+const logoutRole = asyncHandler(async (req, res) => {
+  const { clearAuthCookie } = require('../middleware/auth');
+  const role = req.body?.role || req.user?.role;
+  clearAuthCookie(res, role);
+  res.json({ success: true, message: 'Logout berhasil' });
 });
 
 module.exports = {
   loginGuru,
   loginKepsek,
   loginAdmin,
+  logoutRole,
   listGuruPublic,
   listGuruAdmin,
   createGuru,

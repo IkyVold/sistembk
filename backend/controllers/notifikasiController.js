@@ -9,7 +9,9 @@ const getVapidPublicKey = asyncHandler(async (req, res) => {
 });
 
 const subscribe = asyncHandler(async (req, res) => {
-  const result = await notifikasiService.subscribe(req.body);
+  // NIS selalu dari JWT — tidak boleh dari body client
+  const body = { ...req.body, nis: req.user.nis };
+  const result = await notifikasiService.subscribe(body);
   res.json({ success: true, message: result.message });
 });
 
@@ -19,6 +21,9 @@ const unsubscribe = asyncHandler(async (req, res) => {
 });
 
 const list = asyncHandler(async (req, res) => {
+  if (req.user.role === 'siswa' && String(req.user.nis) !== String(req.params.nis)) {
+    throw new HttpError(403, 'Anda hanya dapat mengakses notifikasi milik sendiri');
+  }
   const data = await notifikasiService.listByNis(req.params.nis, req.query.limit);
   res.json(data);
 });
@@ -29,16 +34,20 @@ const markRead = asyncHandler(async (req, res) => {
 });
 
 const markAllRead = asyncHandler(async (req, res) => {
+  if (req.user.role === 'siswa' && String(req.user.nis) !== String(req.params.nis)) {
+    throw new HttpError(403, 'Anda hanya dapat mengakses notifikasi milik sendiri');
+  }
   await notifikasiService.markAllRead(req.params.nis);
   res.json({ success: true });
 });
 
 const listGuru = asyncHandler(async (req, res) => {
-  // Hanya boleh akses username sendiri (kecuali admin)
-  if (req.user.role === 'guru' && String(req.user.username) !== String(req.params.username)) {
-    throw new HttpError(403, 'Anda hanya dapat mengakses notifikasi milik sendiri');
+  // Guru: selalu username dari JWT (abaikan param supaya tidak 403 karena beda casing/typo)
+  let username = req.params.username;
+  if (req.user.role === 'guru') {
+    username = req.user.username;
   }
-  const data = await notifikasiService.listByGuruUsername(req.params.username, req.query.limit);
+  const data = await notifikasiService.listByGuruUsername(username, req.query.limit);
   res.json(data);
 });
 
@@ -48,10 +57,11 @@ const markReadGuru = asyncHandler(async (req, res) => {
 });
 
 const markAllReadGuru = asyncHandler(async (req, res) => {
-  if (req.user.role === 'guru' && String(req.user.username) !== String(req.params.username)) {
-    throw new HttpError(403, 'Anda hanya dapat mengakses notifikasi milik sendiri');
+  let username = req.params.username;
+  if (req.user.role === 'guru') {
+    username = req.user.username;
   }
-  await notifikasiService.markAllReadGuru(req.params.username);
+  await notifikasiService.markAllReadGuru(username);
   res.json({ success: true });
 });
 

@@ -559,3 +559,19 @@
             .history-page .summary-strip { flex-wrap: wrap; }
             .history-page .history-card-header { flex-direction: column; gap: 10px; }
         }
+
+@media (max-width: 767px) {
+  .history-page {
+    padding-bottom: 90px !important;
+  }
+  .history-page .container,
+  .history-page .main {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+  .history-page table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}

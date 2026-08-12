@@ -55,6 +55,8 @@ export function mapKonselingRow(row) {
           tanggalLaporan: row.laporan_tanggal ? formatTanggal(row.laporan_tanggal) : '-',
           waktuLaporan: row.laporan_waktu || '-',
           dibuatOleh: row.laporan_dibuat_oleh || row.guru,
+    inputManual: !!row.input_manual,
+    catatanWalkin: row.catatan_walkin || null,
         }
       : null,
   };
@@ -83,7 +85,9 @@ export function getTopKategori(stats) {
     { name: 'Akademik', value: stats.akademik },
     { name: 'Sosial', value: stats.sosial },
     { name: 'Pribadi', value: stats.pribadi },
+    { name: 'Karir', value: stats.karir || 0 },
     { name: 'Bullying', value: stats.bullying },
+    { name: 'Keluarga', value: stats.keluarga || 0 },
   ];
   return categories.sort((a, b) => b.value - a.value)[0];
 }

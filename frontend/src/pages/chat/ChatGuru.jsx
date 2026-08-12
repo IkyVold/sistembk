@@ -22,7 +22,7 @@ export default function ChatGuru() {
       type: 'guru',
     };
 
-    const siswaName = siswaFromUrl || localStorage.getItem('chatSiswaName') || 'Siswa';
+    const siswaName = (siswaFromUrl || localStorage.getItem('chatSiswaName') || 'Siswa').slice(0, 100);
     const siswaNis = localStorage.getItem('chatSiswaNISN');
     const sessionId = sessionFromUrl || localStorage.getItem('currentChatSession');
 
@@ -51,21 +51,21 @@ export default function ChatGuru() {
 
   if (!setup) return null;
 
-  const infoBannerDefaultHtml = setup.kategori
+  const infoBannerDefault = setup.kategori
     ? `📋 Kategori: ${setup.kategori} • 💬 Chat dengan ${setup.siswaName}`
-    : '🔒 Percakapan bersifat rahasia — hanya kamu dan siswa yang bisa melihatnya';
+    : `💬 Chat dengan ${setup.siswaName}`;
 
   return (
     <ChatRoom
       sessionId={setup.sessionId}
       currentUser={setup.currentUser}
       headerTitle={`Konseling dengan ${setup.siswaName}`}
-      headerSubtitleHtml={`<strong>${setup.siswaName}</strong>`}
+      headerSubtitle={setup.siswaName}
       avatarUrl={siswaFoto}
       avatarName={setup.siswaName}
       backHref="/guru-bk"
       backLabel="Dashboard"
-      infoBannerDefaultHtml={infoBannerDefaultHtml}
+      infoBannerDefault={infoBannerDefault}
     />
   );
 }

@@ -509,3 +509,25 @@
             .status-page .chat-modal { width: calc(100vw - 32px); right: 16px; }
             .status-page .chatbot-fab { bottom: 20px; right: 20px; }
         }
+
+@media (max-width: 767px) {
+  .status-page {
+    padding-bottom: 90px !important;
+  }
+  .status-page .container,
+  .status-page .main,
+  .status-page .content {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+  .status-page table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    font-size: 13px;
+  }
+  .status-page .card,
+  .status-page .status-card {
+    border-radius: 12px;
+  }
+}

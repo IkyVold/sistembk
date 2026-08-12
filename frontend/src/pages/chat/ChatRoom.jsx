@@ -15,12 +15,12 @@ export default function ChatRoom({
   sessionId,
   currentUser, // { id, name, type }
   headerTitle,
-  headerSubtitleHtml,
+  headerSubtitle,
   avatarUrl, // path foto (siswa) dari backend, opsional
   avatarName, // nama untuk fallback inisial avatar (bukan headerTitle, supaya inisialnya benar)
   backHref,
   backLabel,
-  infoBannerDefaultHtml,
+  infoBannerDefault,
 }) {
   const { events, connStatus, connMessage, typingText, sendMessage, notifyTyping } = useChatSocket({
     sessionId,
@@ -36,12 +36,12 @@ export default function ChatRoom({
   const isConnected = connStatus === 'connected';
 
   let bannerStyle = { background: '#EAF6EF', color: '#1E8E5A' };
-  let bannerHtml = infoBannerDefaultHtml;
+  let bannerText = infoBannerDefault;
   if (!isConnected) {
     bannerStyle = { background: '#FBEEEA', color: '#B4432F' };
-    bannerHtml = '⚠️ Koneksi terputus • Pesan akan tersimpan secara lokal';
+    bannerText = '⚠️ Koneksi terputus • Pesan akan tersimpan secara lokal';
   } else if (events.length > 0) {
-    bannerHtml = '✅ Chat aktif • Pesan terkirim real-time';
+    bannerText = '✅ Chat aktif • Pesan terkirim real-time';
   }
 
   function handleSend() {
@@ -76,7 +76,7 @@ export default function ChatRoom({
           </div>
           <div className="chat-header-text">
             <h2>{headerTitle}</h2>
-            <p dangerouslySetInnerHTML={{ __html: headerSubtitleHtml }} />
+            <p>{headerSubtitle}</p>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -88,7 +88,7 @@ export default function ChatRoom({
         </div>
       </div>
 
-      <div className="info-banner" style={bannerStyle} dangerouslySetInnerHTML={{ __html: bannerHtml }} />
+      <div className="info-banner" style={bannerStyle}>{bannerText}</div>
 
       <div className="chat-messages">
         {events.map((event) => {
@@ -115,8 +115,13 @@ export default function ChatRoom({
           }
 
           const message = event.data;
-          const isSent = message.senderId === currentUser.id;
-          const displayName = isSent ? 'Saya' : message.senderName || (message.senderType === 'guru' ? 'Guru BK' : 'Siswa');
+          const isSent =
+            String(message.senderId) === String(currentUser.id) ||
+            (message.senderType && currentUser.type && message.senderType === currentUser.type &&
+              String(message.senderId) === String(currentUser.id));
+          const displayName = isSent
+            ? 'Saya'
+            : (message.senderName || (message.senderType === 'guru' ? 'Guru BK' : 'Siswa'));
 
           return (
             <div className={`message ${isSent ? 'sent' : 'received'}`} key={event.key}>
